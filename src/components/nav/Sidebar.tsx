@@ -1,12 +1,9 @@
-import { getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
-import { NAV_ITEMS } from "./nav-items";
+import { getVisibleNavItems } from "./getVisibleNavItems";
 import { NavLinks } from "./NavLinks";
 import { Logo } from "@/components/brand/Logo";
 
 export async function Sidebar() {
-  const user = await getCurrentUser();
-  const perms = user ? await getEffectivePermissions(user.id) : new Set<string>();
-  const items = NAV_ITEMS.filter((item) => perms.has(item.permission));
+  const items = await getVisibleNavItems();
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
