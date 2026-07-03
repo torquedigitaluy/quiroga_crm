@@ -1,0 +1,146 @@
+// Central permission catalog. Every server action/route handler gates on one
+// of these keys via assertCan(). Roles grant a set of these; individual users
+// can additionally GRANT or REVOKE any key on top of their role(s) — this is
+// the "funcionalidades personalizadas" feature from the superadmin panel.
+
+export type PermissionDef = {
+  key: string;
+  label: string;
+  grupo: string;
+};
+
+export const PERMISSIONS: PermissionDef[] = [
+  // Stock
+  { key: "stock.view", label: "Ver stock", grupo: "Stock" },
+  { key: "stock.create", label: "Crear vehículos", grupo: "Stock" },
+  { key: "stock.edit_vehicle_fields", label: "Editar datos del vehículo", grupo: "Stock" },
+  { key: "stock.edit_price", label: "Cambiar precio de venta", grupo: "Stock" },
+  { key: "stock.edit_patente", label: "Actualizar valor de patente", grupo: "Stock" },
+  { key: "stock.move_location", label: "Mover el auto de local", grupo: "Stock" },
+  { key: "stock.edit_status", label: "Cambiar estado (taller/señado/publicado)", grupo: "Stock" },
+  { key: "stock.edit_owner", label: "Editar propietario", grupo: "Stock" },
+  { key: "stock.delete", label: "Eliminar vehículos", grupo: "Stock" },
+
+  // Costos
+  { key: "costos.view", label: "Ver costos de vehículos", grupo: "Costos" },
+  { key: "costos.edit", label: "Editar costos de vehículos", grupo: "Costos" },
+
+  // Ventas
+  { key: "ventas.view_full", label: "Ver todas las ventas", grupo: "Ventas" },
+  { key: "ventas.view_own", label: "Ver mi planilla de venta", grupo: "Ventas" },
+  { key: "ventas.create", label: "Registrar ventas", grupo: "Ventas" },
+  { key: "ventas.edit", label: "Editar ventas", grupo: "Ventas" },
+
+  // BBVA
+  { key: "bbva.view", label: "Ver créditos BBVA", grupo: "BBVA" },
+  { key: "bbva.edit", label: "Editar créditos BBVA", grupo: "BBVA" },
+
+  // Escribanía
+  { key: "escribania.view", label: "Ver escribanía", grupo: "Escribanía" },
+  { key: "escribania.edit", label: "Editar escribanía", grupo: "Escribanía" },
+
+  // Financiación de títulos
+  { key: "titulos.view", label: "Ver financiación de títulos", grupo: "Financiación de Títulos" },
+  { key: "titulos.edit", label: "Editar financiación de títulos", grupo: "Financiación de Títulos" },
+
+  // Personal
+  { key: "personal.view", label: "Ver personal", grupo: "Personal" },
+  { key: "personal.edit", label: "Editar personal / asistencia", grupo: "Personal" },
+
+  // Financiación propia
+  { key: "propia.view", label: "Ver financiación propia", grupo: "Financiación Propia" },
+  { key: "propia.edit", label: "Editar financiación propia", grupo: "Financiación Propia" },
+  { key: "conforme.generate", label: "Generar conformes", grupo: "Financiación Propia" },
+  { key: "deudas.view", label: "Ver deudas de clientes", grupo: "Financiación Propia" },
+  { key: "deudas.edit", label: "Editar deudas de clientes", grupo: "Financiación Propia" },
+
+  // Contadora
+  { key: "contadora.view", label: "Ver gastos administrativos", grupo: "Contadora" },
+  { key: "contadora.edit", label: "Editar gastos administrativos", grupo: "Contadora" },
+
+  // Bancos
+  { key: "bancos.view", label: "Ver bancos", grupo: "Bancos" },
+  { key: "bancos.edit", label: "Editar movimientos bancarios", grupo: "Bancos" },
+
+  // Documentos
+  { key: "docs.generate", label: "Generar documentos", grupo: "Documentos" },
+  { key: "docs.template_edit", label: "Editar plantillas de documentos", grupo: "Documentos" },
+
+  // Clientes
+  { key: "clientes.view", label: "Ver buscador de clientes", grupo: "Clientes" },
+
+  // Dashboard
+  { key: "dashboard.view", label: "Ver panel principal", grupo: "Dashboard" },
+
+  // Admin
+  { key: "admin.users", label: "Administrar usuarios y roles", grupo: "Administración" },
+];
+
+export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key);
+
+export const ROLE_DEFS = {
+  SUPERADMIN: { nombre: "Super Admin", descripcion: "Acceso total, gestiona usuarios y permisos" },
+  VENDEDOR: { nombre: "Vendedor", descripcion: "Acceso a stock y su propia planilla de venta" },
+  CONTADORA: { nombre: "Contadora", descripcion: "Gastos administrativos y bancos" },
+  ESCRIBANIA: { nombre: "Escribanía", descripcion: "Trámites de escribanía y títulos" },
+  ADMINISTRACION: { nombre: "Administración", descripcion: "Acceso amplio de back-office" },
+} as const;
+
+export type RoleKey = keyof typeof ROLE_DEFS;
+
+// Which permissions each seeded role grants. SUPERADMIN bypasses checks entirely
+// in the permission engine, but we still give it every key here for consistency
+// in the admin UI.
+export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
+  SUPERADMIN: PERMISSION_KEYS,
+  VENDEDOR: [
+    "dashboard.view",
+    "stock.view",
+    "stock.edit_vehicle_fields",
+    "stock.edit_price",
+    "stock.edit_patente",
+    "stock.move_location",
+    "stock.edit_status",
+    "ventas.view_own",
+    "clientes.view",
+  ],
+  CONTADORA: [
+    "dashboard.view",
+    "contadora.view",
+    "contadora.edit",
+    "bancos.view",
+    "bancos.edit",
+    "ventas.view_full",
+    "clientes.view",
+  ],
+  ESCRIBANIA: [
+    "dashboard.view",
+    "stock.view",
+    "escribania.view",
+    "escribania.edit",
+    "titulos.view",
+    "titulos.edit",
+    "docs.generate",
+    "clientes.view",
+  ],
+  ADMINISTRACION: [
+    "dashboard.view",
+    "stock.view",
+    "costos.view",
+    "costos.edit",
+    "ventas.view_full",
+    "ventas.create",
+    "ventas.edit",
+    "bbva.view",
+    "bbva.edit",
+    "personal.view",
+    "personal.edit",
+    "propia.view",
+    "propia.edit",
+    "conforme.generate",
+    "deudas.view",
+    "deudas.edit",
+    "docs.generate",
+    "clientes.view",
+  ],
+};

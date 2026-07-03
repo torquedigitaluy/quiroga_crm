@@ -1,0 +1,74 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { assertCan } from "@/lib/permissions/engine";
+import { unitsToCents } from "@/lib/money";
+import { findOrCreateCliente } from "@/lib/cliente";
+import { escribaniaSchema } from "./schema";
+
+function dateOrNull(value: FormDataEntryValue | null): Date | null {
+  const str = String(value ?? "").trim();
+  return str ? new Date(str) : null;
+}
+
+export async function createTramite(formData: FormData) {
+  await assertCan("escribania.edit");
+
+  const raw = {
+    vehiculoId: String(formData.get("vehiculoId") ?? ""),
+    clienteNombre: String(formData.get("clienteNombre") ?? ""),
+    clienteApellido: String(formData.get("clienteApellido") ?? ""),
+    clienteCi: String(formData.get("clienteCi") ?? ""),
+    clienteContacto: String(formData.get("clienteContacto") ?? ""),
+    tipoDoc: String(formData.get("tipoDoc") ?? "CV"),
+    titulosCon: String(formData.get("titulosCon") ?? "ANALIA"),
+    pagoEscribaniaCents: unitsToCents(parseFloat(String(formData.get("pagoEscribaniaCents") ?? "0")) || 0),
+    pagoMoneda: String(formData.get("pagoMoneda") ?? "USD"),
+    cobroAlCliente: String(formData.get("cobroAlCliente") ?? "CONTADO"),
+    cobroMontoCents: unitsToCents(parseFloat(String(formData.get("cobroMontoCents") ?? "0")) || 0),
+    ubicacionTitulos: String(formData.get("ubicacionTitulos") ?? "CLIENTE"),
+  };
+
+  const parsed = escribaniaSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues.map((i) => i.message).join(", "));
+  }
+  const data = parsed.data;
+
+  const cliente = await findOrCreateCliente({
+    nombre: data.clienteNombre,
+    apellido: data.clienteApellido,
+    ci: data.clienteCi,
+    contacto: data.clienteContacto,
+  });
+
+  await db.escribaniaTramite.create({
+    data: {
+      vehiculoId: data.vehiculoId,
+      clienteId: cliente.id,
+      fecha: dateOrNull(formData.get("fecha")),
+      tipoDoc: data.tipoDoc,
+      titulosCon: data.titulosCon,
+      fechaFirma: dateOrNull(formData.get("fechaFirma")),
+      pagoEscribaniaCents: data.pagoEscribaniaCents,
+      pagoMoneda: data.pagoMoneda,
+      fechaPago: dateOrNull(formData.get("fechaPago")),
+      cobroAlCliente: data.cobroAlCliente,
+      cobroMontoCents: data.cobroMontoCents,
+      fechaCobro: dateOrNull(formData.get("fechaCobro")),
+      fechaEntregaTitulos: dateOrNull(formData.get("fechaEntregaTitulos")),
+      ubicacionTitulos: data.ubicacionTitulos,
+    },
+  });
+
+  revalidatePath("/escribania");
+  redirect("/escribania");
+}
+
+export async function deleteTramite(id: string) {
+  await assertCan("escribania.edit");
+  await db.escribaniaTramite.delete({ where: { id } });
+  revalidatePath("/escribania");
+}
