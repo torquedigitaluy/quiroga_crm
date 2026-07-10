@@ -47,3 +47,8 @@ CREATE INDEX "AuditLog_entidad_idx" ON "AuditLog"("entidad");
 
 -- AddForeignKey
 ALTER TABLE "Vehiculo" ADD CONSTRAINT "Vehiculo_responsableId_fkey" FOREIGN KEY ("responsableId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Crea la cuenta bancaria "Gastos Taller" (sin depender de correr el seed en prod).
+INSERT INTO "CuentaBancaria" ("id", "nombre", "saldoInicialPesosCents", "saldoInicialUsdCents")
+VALUES ('cuenta_gastos_taller', 'GASTOS_TALLER', 0, 0)
+ON CONFLICT ("nombre") DO NOTHING;
