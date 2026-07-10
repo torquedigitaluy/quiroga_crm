@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { assertCan, getEffectivePermissions } from "@/lib/permissions/engine";
 import { db } from "@/lib/db";
 import { formatCents } from "@/lib/money";
@@ -7,6 +8,7 @@ import { computeSaldos } from "@/lib/saldos";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { VentasChart, type VentasMes } from "@/components/dashboard/VentasChart";
+import { ClickableStatCard } from "@/components/dashboard/ClickableStatCard";
 
 const MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -23,6 +25,20 @@ export default async function DashboardPage() {
   const stockPorEstado = { APRONTANDO: 0, SENADO: 0, PUBLICADO: 0 } as Record<string, number>;
   for (const v of vehiculos) stockPorEstado[v.estado] = v._count;
 
+  // Detalle para los popups de las cards de Taller y Señados.
+  const [tallerVehiculos, senadoVehiculos] = await Promise.all([
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, estado: "APRONTANDO" },
+      include: { ordenesTaller: { orderBy: { fechaIngreso: "desc" }, take: 1 } },
+      orderBy: { fechaIngreso: "desc" },
+    }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, estado: "SENADO" },
+      include: { ventas: { orderBy: { createdAt: "desc" }, take: 1, include: { cliente: true } } },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -33,8 +49,24 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <StatCard label="Taller / Aprontando" value={stockPorEstado.APRONTANDO.toString()} variant="warning" />
-        <StatCard label="Señados" value={stockPorEstado.SENADO.toString()} variant="danger" />
+        <ClickableStatCard
+          label="Taller / Aprontando"
+          value={stockPorEstado.APRONTANDO.toString()}
+          variant="warning"
+          title="Vehículos en taller / aprontando"
+          description="Autos en preparación y su orden de taller (ingreso y trabajos)."
+        >
+          <TallerDetalle vehiculos={tallerVehiculos} />
+        </ClickableStatCard>
+        <ClickableStatCard
+          label="Señados"
+          value={stockPorEstado.SENADO.toString()}
+          variant="danger"
+          title="Vehículos señados"
+          description="Autos con seña registrada y su venta."
+        >
+          <SenadosDetalle vehiculos={senadoVehiculos} />
+        </ClickableStatCard>
         <StatCard label="Publicados" value={stockPorEstado.PUBLICADO.toString()} variant="default" />
       </div>
 
@@ -230,6 +262,95 @@ function buildChartData(
     if (ventasPorMes.has(key)) ventasPorMes.set(key, (ventasPorMes.get(key) ?? 0) + value / 100);
   }
   return [...ventasPorMes.entries()].map(([mes, total]) => ({ mes, total: Math.round(total) }));
+}
+
+type TallerVehiculo = Prisma.VehiculoGetPayload<{ include: { ordenesTaller: true } }>;
+type SenadoVehiculo = Prisma.VehiculoGetPayload<{ include: { ventas: { include: { cliente: true } } } }>;
+
+function TallerDetalle({ vehiculos }: { vehiculos: TallerVehiculo[] }) {
+  if (vehiculos.length === 0) {
+    return <p className="text-sm text-muted-foreground">No hay vehículos en taller en este momento.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      {vehiculos.map((v) => {
+        const orden = v.ordenesTaller[0];
+        return (
+          <div key={v.id} className="rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <Link href={`/stock/${v.id}`} className="font-medium text-foreground hover:text-brand">
+                {v.marca} {v.modelo} {v.matricula ? `· ${v.matricula}` : ""}
+              </Link>
+              <span className="text-xs text-muted-foreground">
+                Ingreso: {new Date(orden?.fechaIngreso ?? v.fechaIngreso).toLocaleDateString("es-UY")}
+              </span>
+            </div>
+            {orden ? (
+              <div className="mt-2 text-sm">
+                <p className="text-foreground">
+                  <span className="text-muted-foreground">Trabajos: </span>
+                  {orden.trabajos}
+                </p>
+                {orden.repuestos && (
+                  <p className="text-muted-foreground">Repuestos: {orden.repuestos}</p>
+                )}
+                {orden.responsable && (
+                  <p className="text-muted-foreground">Responsable: {orden.responsable}</p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Sin orden de taller cargada todavía.</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SenadosDetalle({ vehiculos }: { vehiculos: SenadoVehiculo[] }) {
+  if (vehiculos.length === 0) {
+    return <p className="text-sm text-muted-foreground">No hay vehículos señados en este momento.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      {vehiculos.map((v) => {
+        const venta = v.ventas[0];
+        return (
+          <div key={v.id} className="rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <Link href={`/stock/${v.id}`} className="font-medium text-foreground hover:text-brand">
+                {v.marca} {v.modelo} {v.matricula ? `· ${v.matricula}` : ""}
+              </Link>
+              {venta?.fechaSena && (
+                <span className="text-xs text-muted-foreground">
+                  Seña: {new Date(venta.fechaSena).toLocaleDateString("es-UY")}
+                </span>
+              )}
+            </div>
+            {venta ? (
+              <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                <span>
+                  <span className="text-muted-foreground">Cliente: </span>
+                  {venta.cliente ? `${venta.cliente.nombre} ${venta.cliente.apellido ?? ""}` : "—"}
+                </span>
+                <span>
+                  <span className="text-muted-foreground">Precio: </span>
+                  {formatCents(venta.precioVentaUsdCents, "USD")}
+                </span>
+                <span>
+                  <span className="text-muted-foreground">Seña: </span>
+                  {formatCents(venta.senaUsdCents, "USD")}
+                </span>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Señado sin venta asociada.</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function StatCard({
