@@ -48,14 +48,27 @@ async function main() {
   });
 
   console.log("Seeding usuarios…");
-  const seedUsers: { email: string; nombre: string; password: string; role: RoleKey }[] = [
+  const seedUsers: {
+    email: string;
+    nombre: string;
+    password: string;
+    role?: RoleKey;
+    esVendedor?: boolean;
+  }[] = [
     {
       email: (process.env.SEED_ADMIN_EMAIL ?? "admin@quiroga.local").toLowerCase(),
       nombre: "Administrador",
       password: process.env.SEED_ADMIN_PASSWORD ?? "Quiroga2026!",
       role: "SUPERADMIN",
     },
-    { email: "vendedor@quiroga.local", nombre: "Patricio Piñeyro", password: "Vendedor2026!", role: "VENDEDOR" },
+    { email: "vendedor@quiroga.local", nombre: "Patricio Piñeyro", password: "Vendedor2026!", role: "VENDEDOR", esVendedor: true },
+    { email: "matias@quiroga.local", nombre: "Matias Soria", password: "Matias2026!", role: "VENDEDOR", esVendedor: true },
+    { email: "georgina@quiroga.local", nombre: "Georgina", password: "Georgina2026!", role: "ADMINISTRACION", esVendedor: true },
+    { email: "jorge@quiroga.local", nombre: "Jorge", password: "Jorge2026!", role: "SUPERADMIN", esVendedor: true },
+    { email: "pepe@quiroga.local", nombre: "Pepe", password: "Pepe2026!", role: "ADMINISTRACION" },
+    // "Reventa" no es una persona: es una opción del desplegable de vendedores
+    // para ventas de reventa. No tiene rol (no inicia sesión de forma útil).
+    { email: "reventa@quiroga.local", nombre: "Reventa", password: `${Math.random().toString(36).slice(2)}Rv1!`, esVendedor: true },
     { email: "contadora@quiroga.local", nombre: "Contadora", password: "Contadora2026!", role: "CONTADORA" },
     { email: "escribania@quiroga.local", nombre: "Escribanía", password: "Escribania2026!", role: "ESCRIBANIA" },
     {
@@ -70,15 +83,17 @@ async function main() {
     const passwordHash = await bcrypt.hash(su.password, 10);
     const user = await db.user.upsert({
       where: { email: su.email },
-      update: { nombre: su.nombre, passwordHash },
-      create: { email: su.email, nombre: su.nombre, passwordHash },
+      update: { nombre: su.nombre, esVendedor: su.esVendedor ?? false },
+      create: { email: su.email, nombre: su.nombre, passwordHash, esVendedor: su.esVendedor ?? false },
     });
-    const role = await db.role.findUniqueOrThrow({ where: { key: su.role } });
-    await db.userRole.upsert({
-      where: { userId_roleId: { userId: user.id, roleId: role.id } },
-      update: {},
-      create: { userId: user.id, roleId: role.id },
-    });
+    if (su.role) {
+      const role = await db.role.findUniqueOrThrow({ where: { key: su.role } });
+      await db.userRole.upsert({
+        where: { userId_roleId: { userId: user.id, roleId: role.id } },
+        update: {},
+        create: { userId: user.id, roleId: role.id },
+      });
+    }
   }
 
   console.log("Seeding empleados…");
@@ -544,7 +559,7 @@ async function main() {
   console.log("——————————————————————————————————————————");
   console.log("Usuarios de prueba (email / contraseña):");
   for (const su of seedUsers) {
-    console.log(`  ${su.role.padEnd(14)} ${su.email} / ${su.password}`);
+    console.log(`  ${(su.role ?? "—").padEnd(14)} ${su.email} / ${su.password}`);
   }
   console.log("——————————————————————————————————————————");
 }

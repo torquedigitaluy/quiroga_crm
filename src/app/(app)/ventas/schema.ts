@@ -1,6 +1,16 @@
 import { z } from "zod";
 
-export const localVentaEnum = z.enum(["SAN_LUIS", "ZONAMERICA"]);
+export const localVentaEnum = z.enum([
+  "SAN_LUIS",
+  "ZONAMERICA",
+  "SHOPPINGCAR",
+  "SANTA_ROSA",
+  "AUTOBULEVAR",
+  "PEDERNAL",
+  "HOMERO_DE_LEON",
+  "CONCORDE",
+  "ROVEIRA",
+]);
 
 export const ventaSchema = z.object({
   vehiculoId: z.string().min(1, "Elegí un vehículo"),

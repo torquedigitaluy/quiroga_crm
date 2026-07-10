@@ -47,6 +47,13 @@ enum Moneda {
 enum LocalVenta {
   SAN_LUIS
   ZONAMERICA
+  SHOPPINGCAR
+  SANTA_ROSA
+  AUTOBULEVAR
+  PEDERNAL
+  HOMERO_DE_LEON
+  CONCORDE
+  ROVEIRA
 }
 
 enum EstadoCredito {
@@ -128,6 +135,7 @@ model User {
   email        String   @unique
   passwordHash String
   activo       Boolean  @default(true)
+  esVendedor   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

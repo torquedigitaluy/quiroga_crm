@@ -11,7 +11,7 @@ export default async function NuevaVentaPage() {
       where: { esVehiculo: true, estado: { not: "SENADO" } },
       orderBy: { marca: "asc" },
     }),
-    db.user.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+    db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } }),
   ]);
 
   return (
@@ -26,6 +26,7 @@ export default async function NuevaVentaPage() {
         vehiculos={vehiculos.map((v) => ({
           id: v.id,
           label: `${v.marca} ${v.modelo}${v.matricula ? ` — ${v.matricula}` : ""}`,
+          propietario: v.propietario,
         }))}
         vendedores={usuarios.map((u) => ({ id: u.id, label: u.nombre }))}
         action={createVenta}

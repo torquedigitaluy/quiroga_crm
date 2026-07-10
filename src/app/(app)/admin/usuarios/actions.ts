@@ -37,6 +37,12 @@ export async function toggleUserActivo(userId: string, activo: boolean) {
   revalidatePath("/admin/usuarios");
 }
 
+export async function toggleUserEsVendedor(userId: string, esVendedor: boolean) {
+  await assertCan("admin.users");
+  await db.user.update({ where: { id: userId }, data: { esVendedor } });
+  revalidatePath(`/admin/usuarios/${userId}`);
+}
+
 export async function toggleUserRole(userId: string, roleId: string, assign: boolean) {
   await assertCan("admin.users");
   if (assign) {
