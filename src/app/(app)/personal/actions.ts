@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 
 export async function createEmpleado(formData: FormData) {
   await assertCan("personal.edit");
@@ -67,6 +68,13 @@ export async function addDescuento(empleadoId: string, formData: FormData) {
 
 export async function deleteDescuento(empleadoId: string, descuentoId: string) {
   await assertCan("personal.edit");
+  const desc = await db.descuentoEmpleado.findUnique({ where: { id: descuentoId } });
   await db.descuentoEmpleado.delete({ where: { id: descuentoId } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Descuento de empleado",
+    entidadId: descuentoId,
+    descripcion: desc ? `Eliminó el descuento "${desc.concepto}"` : `Eliminó un descuento (${descuentoId})`,
+  });
   revalidatePath(`/personal/${empleadoId}`);
 }

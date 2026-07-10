@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
+import { logAudit } from "@/lib/audit";
 import { ventaSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -66,6 +67,12 @@ export async function createVenta(formData: FormData) {
   });
 
   await db.vehiculo.update({ where: { id: data.vehiculoId }, data: { estado: "SENADO" } });
+  await logAudit({
+    accion: "CREAR",
+    entidad: "Venta",
+    entidadId: data.vehiculoId,
+    descripcion: `Registró la venta de ${vehiculo?.marca ?? ""} ${vehiculo?.modelo ?? ""}`.trim(),
+  });
 
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");
@@ -127,6 +134,13 @@ export async function updateVenta(id: string, formData: FormData) {
       comisionVentaUsdCents: data.comisionVentaUsdCents,
       comisionTituloUsdCents: data.comisionTituloUsdCents,
     },
+  });
+
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Venta",
+    entidadId: id,
+    descripcion: `Editó la venta de ${vehiculo?.marca ?? ""} ${vehiculo?.modelo ?? ""}`.trim(),
   });
 
   revalidatePath("/ventas");

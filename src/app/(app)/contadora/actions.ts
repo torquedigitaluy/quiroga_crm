@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 
 export async function createGastoContadora(formData: FormData) {
   await assertCan("contadora.edit");
@@ -36,6 +37,15 @@ export async function createGastoContadora(formData: FormData) {
 
 export async function deleteGastoContadora(id: string) {
   await assertCan("contadora.edit");
+  const gasto = await db.gastoContadora.findUnique({ where: { id } });
   await db.gastoContadora.delete({ where: { id } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Gasto contadora",
+    entidadId: id,
+    descripcion: gasto
+      ? `Eliminó el gasto de ${gasto.proveedor}${gasto.numeroFactura ? ` (${gasto.numeroFactura})` : ""}`
+      : `Eliminó un gasto de contadora (${id})`,
+  });
   revalidatePath("/contadora");
 }

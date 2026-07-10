@@ -36,4 +36,5 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/documentos", label: "Documentos", icon: "documentos", permission: "docs.generate" },
   { href: "/clientes", label: "Clientes", icon: "clientes", permission: "clientes.view" },
   { href: "/admin/usuarios", label: "Administración", icon: "admin", permission: "admin.users" },
+  { href: "/admin/auditoria", label: "Historial de cambios", icon: "admin", permission: "audit.view" },
 ];

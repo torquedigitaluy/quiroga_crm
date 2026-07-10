@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
+import { logAudit } from "@/lib/audit";
 import { financiacionTituloSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -83,6 +84,12 @@ export async function addEntrega(financiacionTituloId: string, formData: FormDat
 export async function deleteEntrega(financiacionTituloId: string, entregaId: string) {
   await assertCan("titulos.edit");
   await db.entregaTitulo.delete({ where: { id: entregaId } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Entrega de título",
+    entidadId: entregaId,
+    descripcion: `Eliminó una entrega de la financiación de títulos ${financiacionTituloId}`,
+  });
   revalidatePath(`/titulos/${financiacionTituloId}`);
   revalidatePath("/titulos");
 }

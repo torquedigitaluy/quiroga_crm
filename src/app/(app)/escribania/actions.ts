@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
+import { logAudit } from "@/lib/audit";
 import { escribaniaSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -105,6 +106,15 @@ export async function updateTramite(id: string, formData: FormData) {
 
 export async function deleteTramite(id: string) {
   await assertCan("escribania.edit");
+  const tramite = await db.escribaniaTramite.findUnique({ where: { id }, include: { vehiculo: true } });
   await db.escribaniaTramite.delete({ where: { id } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Trámite de escribanía",
+    entidadId: id,
+    descripcion: tramite
+      ? `Eliminó el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`
+      : `Eliminó un trámite de escribanía (${id})`,
+  });
   revalidatePath("/escribania");
 }

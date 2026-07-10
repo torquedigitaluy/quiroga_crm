@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 
 export async function createMovimiento(cuentaId: string, formData: FormData) {
   await assertCan("bancos.edit");
@@ -35,7 +36,14 @@ export async function createMovimiento(cuentaId: string, formData: FormData) {
 
 export async function deleteMovimiento(id: string) {
   await assertCan("bancos.edit");
+  const mov = await db.movimientoBancario.findUnique({ where: { id } });
   await db.movimientoBancario.delete({ where: { id } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Movimiento bancario",
+    entidadId: id,
+    descripcion: mov ? `Eliminó el movimiento "${mov.detalle}"` : `Eliminó un movimiento bancario (${id})`,
+  });
   revalidatePath("/bancos");
 }
 

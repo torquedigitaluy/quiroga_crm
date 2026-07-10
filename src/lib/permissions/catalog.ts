@@ -74,6 +74,7 @@ export const PERMISSIONS: PermissionDef[] = [
 
   // Admin
   { key: "admin.users", label: "Administrar usuarios y roles", grupo: "Administración" },
+  { key: "audit.view", label: "Ver historial de cambios", grupo: "Administración" },
 ];
 
 export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key);
@@ -135,5 +136,6 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "deudas.edit",
     "docs.generate",
     "clientes.view",
+    "audit.view",
   ],
 };

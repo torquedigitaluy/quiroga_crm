@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents, rateToMicros } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
   const str = String(value ?? "").trim();
@@ -68,6 +69,13 @@ export async function addGasto(vehiculoId: string, formData: FormData) {
 
 export async function deleteGasto(vehiculoId: string, gastoId: string) {
   await assertCan("costos.edit");
+  const gasto = await db.gastoLine.findUnique({ where: { id: gastoId } });
   await db.gastoLine.delete({ where: { id: gastoId } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Gasto de vehículo",
+    entidadId: gastoId,
+    descripcion: gasto ? `Eliminó el gasto "${gasto.descripcion}"` : `Eliminó un gasto de costos (${gastoId})`,
+  });
   revalidatePath(`/costos/${vehiculoId}`);
 }

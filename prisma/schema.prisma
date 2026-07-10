@@ -585,6 +585,25 @@ model OrdenTaller {
   createdAt      DateTime  @default(now())
 }
 
+// ---------- Auditoría ----------
+
+// Registro de cambios: quién hizo qué y cuándo. Se usa sobre todo para saber
+// quién eliminó (o editó) un vehículo, gasto, venta, etc. No tiene FK a User
+// para que el registro sobreviva aunque se borre el usuario.
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  userNombre  String
+  accion      String // CREAR | EDITAR | ELIMINAR
+  entidad     String // "Vehículo", "Venta", "Gasto contadora", etc.
+  entidadId   String?
+  descripcion String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entidad])
+}
+
 // ---------- Configuración ----------
 
 model Configuracion {

@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { formatCents } from "@/lib/money";
 
 export type DescuentoData = {
@@ -46,13 +47,6 @@ export function DescuentosPanel({
     });
   };
 
-  const handleDelete = (id: string) => {
-    startTransition(async () => {
-      await onDelete(id);
-      router.refresh();
-    });
-  };
-
   return (
     <div className="flex flex-col gap-3">
       <Table>
@@ -72,9 +66,11 @@ export function DescuentosPanel({
               <TableCell>{formatCents(d.montoCents, d.moneda)}</TableCell>
               {editable && (
                 <TableCell>
-                  <Button variant="ghost" size="icon" disabled={pending} onClick={() => handleDelete(d.id)}>
-                    <Trash2 className="h-4 w-4 text-danger" />
-                  </Button>
+                  <ConfirmDeleteButton
+                    onConfirm={() => onDelete(d.id)}
+                    title="Eliminar descuento"
+                    description="¿Estás seguro que querés eliminar este descuento? Esta acción no se puede deshacer."
+                  />
                 </TableCell>
               )}
             </TableRow>
