@@ -36,6 +36,7 @@ FIELD_PERMISSIONS.ubicacion = "stock.move_location";
 FIELD_PERMISSIONS.estado = "stock.edit_status";
 FIELD_PERMISSIONS.propietario = "stock.edit_owner";
 FIELD_PERMISSIONS.tipoPropiedad = "stock.edit_owner";
+FIELD_PERMISSIONS.responsableId = "stock.edit_owner";
 
 function formDataToRaw(formData: FormData): Record<string, unknown> {
   const raw: Record<string, unknown> = {};

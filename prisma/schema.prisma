@@ -144,9 +144,10 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  roles       UserRole[]
-  permissions UserPermission[]
-  ventas      Venta[]          @relation("VendedorVentas")
+  roles                UserRole[]
+  permissions          UserPermission[]
+  ventas               Venta[]    @relation("VendedorVentas")
+  vehiculosResponsable Vehiculo[] @relation("VehiculoResponsable")
 }
 
 model Role {
@@ -223,6 +224,8 @@ model Vehiculo {
   esVehiculo          Boolean        @default(true)
   estado              EstadoVehiculo @default(APRONTANDO)
   fechaIngreso        DateTime       @default(now())
+  responsableId       String?
+  responsable         User?          @relation("VehiculoResponsable", fields: [responsableId], references: [id])
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

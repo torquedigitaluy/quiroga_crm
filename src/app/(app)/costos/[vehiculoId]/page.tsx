@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan, getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
+import { getEffectivePermissions, requireUser } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { CosteoForm } from "@/components/costos/CosteoForm";
 import { CosteoSummary } from "@/components/costos/CosteoSummary";
@@ -11,11 +11,18 @@ import { computeCosteo } from "@/lib/costeo";
 import { upsertCosteo, addGasto, deleteGasto } from "./actions";
 
 export default async function CosteoVehiculoPage({ params }: { params: Promise<{ vehiculoId: string }> }) {
-  await assertCan("costos.view");
+  const currentUser = await requireUser();
   const { vehiculoId } = await params;
 
   const vehiculo = await db.vehiculo.findUnique({ where: { id: vehiculoId } });
   if (!vehiculo) notFound();
+
+  // Puede ver/editar si tiene el permiso global o si es responsable del vehículo.
+  const currentPerms = await getEffectivePermissions(currentUser.id);
+  const esResponsable = vehiculo.responsableId === currentUser.id;
+  if (!currentPerms.has("costos.view") && !esResponsable) {
+    throw new Error('No autorizado: falta el permiso "costos.view"');
+  }
 
   let costeo = await db.vehiculoCosteo.findUnique({
     where: { vehiculoId },
@@ -33,9 +40,7 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
 
   const computed = computeCosteo(costeo, costeo.gastos, configRateMicros);
 
-  const user = await getCurrentUser();
-  const perms = user ? await getEffectivePermissions(user.id) : new Set<string>();
-  const editable = perms.has("costos.edit");
+  const editable = currentPerms.has("costos.edit") || esResponsable;
 
   const boundUpsert = upsertCosteo.bind(null, vehiculoId);
   const boundAdd = addGasto.bind(null, vehiculoId);

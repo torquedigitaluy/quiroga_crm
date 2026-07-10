@@ -38,7 +38,10 @@ export type VehiculoFormData = {
   estado?: string;
   propietario?: string | null;
   tipoPropiedad?: string;
+  responsableId?: string | null;
 };
+
+export type UsuarioOption = { id: string; nombre: string };
 
 export type VehiculoFormPermissions = {
   editVehicleFields: boolean;
@@ -63,11 +66,13 @@ export function VehiculoForm({
   permissions = ALL_ALLOWED,
   action,
   submitLabel = "Guardar",
+  usuarios = [],
 }: {
   initial?: VehiculoFormData;
   permissions?: VehiculoFormPermissions;
   action: (formData: FormData) => Promise<void>;
   submitLabel?: string;
+  usuarios?: UsuarioOption[];
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -196,6 +201,24 @@ export function VehiculoForm({
               <SelectItem value="Consignado">Consignado</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Responsable (costos)</Label>
+          <select
+            name="responsableId"
+            defaultValue={initial?.responsableId ?? ""}
+            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+          >
+            <option value="">Sin responsable</option>
+            {usuarios.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nombre}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            El responsable puede editar los costos de este vehículo.
+          </p>
         </div>
       </fieldset>
 
