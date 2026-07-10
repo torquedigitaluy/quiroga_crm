@@ -87,6 +87,11 @@ enum UbicacionTitulos {
   ADM_ZONA
 }
 
+enum FormaPago {
+  CONTADO
+  FINANCIADO
+}
+
 enum TipoPago {
   MENSUAL
   JORNAL
@@ -351,6 +356,7 @@ model EscribaniaTramite {
   fechaCobro          DateTime?
   fechaEntregaTitulos DateTime?
   ubicacionTitulos    UbicacionTitulos @default(CLIENTE)
+  comentarios         String?
   createdAt           DateTime         @default(now())
 
   @@index([fecha])
@@ -370,6 +376,7 @@ model FinanciacionTitulo {
   costoEscribaniaCents Int       @default(0)
   costoMoneda          Moneda    @default(USD)
   cartaDePago          Boolean   @default(false)
+  formaPago            FormaPago @default(CONTADO)
   createdAt            DateTime  @default(now())
 
   entregas EntregaTitulo[]

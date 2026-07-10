@@ -25,6 +25,7 @@ export async function createFinanciacionTitulo(formData: FormData) {
     costoEscribaniaCents: unitsToCents(parseFloat(String(formData.get("costoEscribaniaCents") ?? "0")) || 0),
     costoMoneda: String(formData.get("costoMoneda") ?? "USD"),
     cartaDePago: formData.get("cartaDePago") === "on",
+    formaPago: String(formData.get("formaPago") ?? "CONTADO"),
   };
 
   const parsed = financiacionTituloSchema.safeParse(raw);
@@ -50,6 +51,7 @@ export async function createFinanciacionTitulo(formData: FormData) {
       costoEscribaniaCents: data.costoEscribaniaCents,
       costoMoneda: data.costoMoneda,
       cartaDePago: data.cartaDePago,
+      formaPago: data.formaPago,
     },
   });
 

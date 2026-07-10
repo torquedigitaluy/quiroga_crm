@@ -9,4 +9,5 @@ export const financiacionTituloSchema = z.object({
   costoEscribaniaCents: z.coerce.number().int().min(0).optional().default(0),
   costoMoneda: z.enum(["UYU", "USD"]).default("USD"),
   cartaDePago: z.coerce.boolean().optional().default(false),
+  formaPago: z.enum(["CONTADO", "FINANCIADO"]).default("CONTADO"),
 });
