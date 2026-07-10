@@ -25,6 +25,7 @@ async function main() {
 
     const permKeys = ROLE_PERMISSIONS[key];
     const perms = await db.permission.findMany({ where: { key: { in: permKeys } } });
+    const permIds = perms.map((p) => p.id);
     for (const perm of perms) {
       await db.rolePermission.upsert({
         where: { roleId_permissionId: { roleId: role.id, permissionId: perm.id } },
@@ -32,6 +33,11 @@ async function main() {
         create: { roleId: role.id, permissionId: perm.id },
       });
     }
+    // Poda: quitar del rol cualquier permiso que ya no esté en su lista, así
+    // re-correr el seed deja los roles exactamente como los define el catálogo.
+    await db.rolePermission.deleteMany({
+      where: { roleId: role.id, permissionId: { notIn: permIds } },
+    });
   }
 
   console.log("Seeding configuración…");

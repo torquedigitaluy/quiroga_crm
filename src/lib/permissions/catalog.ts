@@ -94,7 +94,6 @@ export type RoleKey = keyof typeof ROLE_DEFS;
 export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
   SUPERADMIN: PERMISSION_KEYS,
   VENDEDOR: [
-    "dashboard.view",
     "stock.view",
     "stock.edit_vehicle_fields",
     "stock.edit_price",
@@ -102,16 +101,10 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.move_location",
     "stock.edit_status",
     "ventas.view_own",
-    "clientes.view",
   ],
   CONTADORA: [
-    "dashboard.view",
     "contadora.view",
     "contadora.edit",
-    "bancos.view",
-    "bancos.edit",
-    "ventas.view_full",
-    "clientes.view",
   ],
   ESCRIBANIA: [
     "dashboard.view",

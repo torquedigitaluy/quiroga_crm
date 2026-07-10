@@ -99,7 +99,19 @@ export function VehiculoForm({
         <Field label="Transmisión" name="transmision" defaultValue={initial?.transmision ?? ""} />
         <Field label="Matrícula" name="matricula" defaultValue={initial?.matricula ?? ""} />
         <Field label="Padrón" name="padron" defaultValue={initial?.padron ?? ""} />
-        <Field label="Ubicación de la libreta" name="ubicacionLibreta" defaultValue={initial?.ubicacionLibreta ?? ""} />
+        <div className="flex flex-col gap-1.5">
+          <Label>Ubicación de la libreta</Label>
+          <Select name="ubicacionLibreta" defaultValue={initial?.ubicacionLibreta ?? undefined}>
+            <SelectTrigger>
+              <SelectValue placeholder="Seleccioná…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Zona">Zona</SelectItem>
+              <SelectItem value="San Luis">San Luis</SelectItem>
+              <SelectItem value="Propietario">Propietario</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center gap-2 pt-6">
           <Checkbox name="segundaLlave" defaultChecked={initial?.segundaLlave} />
           <Label>Segunda llave</Label>
@@ -150,7 +162,6 @@ export function VehiculoForm({
             <SelectContent>
               <SelectItem value="SAN_LUIS">San Luis</SelectItem>
               <SelectItem value="ZONAMERICA">Zonamérica</SelectItem>
-              <SelectItem value="TALLER">Taller</SelectItem>
               <SelectItem value="PROPIETARIO">Propietario</SelectItem>
             </SelectContent>
           </Select>
@@ -172,17 +183,17 @@ export function VehiculoForm({
 
       <fieldset disabled={!permissions.editOwner} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <legend className="col-span-full mb-1 text-sm font-semibold text-foreground">Propietario</legend>
-        <Field label="Propietario" name="propietario" defaultValue={initial?.propietario ?? ""} />
         <div className="flex flex-col gap-1.5">
-          <Label>Tipo de propiedad</Label>
-          <Select name="tipoPropiedad" defaultValue={initial?.tipoPropiedad ?? "PROPIA"}>
+          <Label>Propietario</Label>
+          <Select name="propietario" defaultValue={initial?.propietario ?? undefined}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Seleccioná…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="PROPIA">Propia</SelectItem>
-              <SelectItem value="PARTNER">Partner</SelectItem>
-              <SelectItem value="CONSIGNADO">Consignado</SelectItem>
+              <SelectItem value="Jorge">Jorge</SelectItem>
+              <SelectItem value="Pepe">Pepe</SelectItem>
+              <SelectItem value="Jorge y Pepe">Jorge y Pepe</SelectItem>
+              <SelectItem value="Consignado">Consignado</SelectItem>
             </SelectContent>
           </Select>
         </div>
