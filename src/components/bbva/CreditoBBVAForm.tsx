@@ -39,10 +39,6 @@ export function CreditoBBVAForm({
           <Input name="ci" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Contacto</Label>
-          <Input name="contacto" />
-        </div>
-        <div className="flex flex-col gap-1.5">
           <Label>Monto solicitado (USD)</Label>
           <Input name="montoSolicitadoUsdCents" type="number" step="0.01" required />
         </div>

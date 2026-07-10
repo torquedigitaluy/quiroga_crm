@@ -119,6 +119,7 @@ enum IvaRate {
 enum Banco {
   BBVA
   SANTANDER
+  GASTOS_TALLER
 }
 
 enum TipoMovimiento {

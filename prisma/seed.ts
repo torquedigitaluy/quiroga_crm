@@ -119,7 +119,7 @@ async function main() {
   }
 
   console.log("Seeding cuentas bancarias…");
-  for (const banco of ["BBVA", "SANTANDER"] as const) {
+  for (const banco of ["BBVA", "SANTANDER", "GASTOS_TALLER"] as const) {
     await db.cuentaBancaria.upsert({
       where: { nombre: banco },
       update: {},
