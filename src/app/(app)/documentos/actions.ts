@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCanAny } from "@/lib/permissions/engine";
 
 export async function createOrdenTaller(formData: FormData) {
-  await assertCan("docs.generate");
+  await assertCanAny(["docs.generate", "taller.edit"]);
 
   const vehiculoId = String(formData.get("vehiculoId") ?? "");
   const fechaIngreso = String(formData.get("fechaIngreso") ?? "");

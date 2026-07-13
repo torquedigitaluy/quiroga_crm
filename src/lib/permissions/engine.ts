@@ -59,6 +59,19 @@ export async function assertCan(permissionKey: string): Promise<{ id: string; na
   return user;
 }
 
+/** Like assertCan, but passes if the user holds ANY of the given permissions. */
+export async function assertCanAny(permissionKeys: string[]): Promise<{ id: string; name?: string | null; email?: string | null }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const perms = await getEffectivePermissions(user.id);
+  if (!permissionKeys.some((key) => perms.has(key))) {
+    throw new Error(`No autorizado: falta alguno de los permisos "${permissionKeys.join(", ")}"`);
+  }
+  return user;
+}
+
 /** For server components that should redirect to login rather than throw. */
 export async function requireUser() {
   const user = await getCurrentUser();

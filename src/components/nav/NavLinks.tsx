@@ -17,6 +17,7 @@ import {
   FileText,
   UserCog,
   Search,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const ICONS: Record<IconKey, LucideIcon> = {
   documentos: FileText,
   clientes: Search,
   admin: UserCog,
+  taller: Wrench,
 };
 
 export function NavLinks({ items }: { items: NavItem[] }) {

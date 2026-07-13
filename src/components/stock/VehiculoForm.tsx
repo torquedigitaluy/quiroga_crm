@@ -165,6 +165,7 @@ export function VehiculoForm({
               <SelectItem value="APRONTANDO">Taller / Aprontando (naranja)</SelectItem>
               <SelectItem value="SENADO">Señado (rojo)</SelectItem>
               <SelectItem value="PUBLICADO">Publicado (blanco)</SelectItem>
+              <SelectItem value="VENDIDO">Vendido (verde)</SelectItem>
             </SelectContent>
           </Select>
         </div>

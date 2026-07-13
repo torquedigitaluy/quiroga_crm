@@ -58,6 +58,9 @@ export default async function FinanciacionPropiaDetailPage({ params }: { params:
           cuotas={financiacion.cuotas}
           editable={editable}
           canGenerateConforme={canGenerateConforme}
+          clienteNombre={financiacion.nombre}
+          clienteContacto={financiacion.contacto ?? financiacion.cliente?.contacto}
+          vehiculoLabel={financiacion.vehiculo ? `${financiacion.vehiculo.marca} ${financiacion.vehiculo.modelo}` : undefined}
         />
       </div>
     </div>

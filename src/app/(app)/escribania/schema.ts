@@ -18,4 +18,5 @@ export const escribaniaSchema = z.object({
   fechaCobro: z.string().optional(),
   fechaEntregaTitulos: z.string().optional(),
   ubicacionTitulos: z.enum(["CLIENTE", "CAMILA", "ANALIA", "ADM_ZONA"]),
+  comentarios: z.string().trim().optional(),
 });

@@ -12,7 +12,8 @@ export type IconKey =
   | "bancos"
   | "documentos"
   | "clientes"
-  | "admin";
+  | "admin"
+  | "taller";
 
 export type NavItem = {
   href: string;
@@ -27,14 +28,15 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/costos", label: "Costos de Vehículos", icon: "costos", permission: "costos.view" },
   { href: "/ventas", label: "Ventas", icon: "ventas", permission: "ventas.view_full" },
   { href: "/ventas/planilla", label: "Mi Planilla de Venta", icon: "ventas", permission: "ventas.view_own" },
-  { href: "/bbva", label: "Créditos BBVA", icon: "bbva", permission: "bbva.view" },
   { href: "/escribania", label: "Escribanía", icon: "escribania", permission: "escribania.view" },
   { href: "/titulos", label: "Financiación de Títulos", icon: "titulos", permission: "titulos.view" },
-  { href: "/personal", label: "Personal", icon: "personal", permission: "personal.view" },
   { href: "/propia", label: "Financiación Propia", icon: "propia", permission: "propia.view" },
-  { href: "/contadora", label: "Contadora", icon: "contadora", permission: "contadora.view" },
+  { href: "/bbva", label: "Créditos BBVA", icon: "bbva", permission: "bbva.view" },
   { href: "/bancos", label: "Bancos", icon: "bancos", permission: "bancos.view" },
+  { href: "/contadora", label: "Contadora", icon: "contadora", permission: "contadora.view" },
+  { href: "/personal", label: "Personal", icon: "personal", permission: "personal.view" },
   { href: "/documentos", label: "Documentos", icon: "documentos", permission: "docs.generate" },
+  { href: "/taller", label: "Taller", icon: "taller", permission: "taller.view" },
   { href: "/clientes", label: "Clientes", icon: "clientes", permission: "clientes.view" },
   { href: "/admin/usuarios", label: "Administración", icon: "admin", permission: "admin.users" },
 ];

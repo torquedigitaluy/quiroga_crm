@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "PermissionEffect" AS ENUM ('GRANT', 'REVOKE');
 
@@ -14,7 +17,7 @@ CREATE TYPE "EstadoVehiculo" AS ENUM ('APRONTANDO', 'SENADO', 'PUBLICADO');
 CREATE TYPE "Moneda" AS ENUM ('UYU', 'USD');
 
 -- CreateEnum
-CREATE TYPE "LocalVenta" AS ENUM ('SAN_LUIS', 'ZONAMERICA');
+CREATE TYPE "LocalVenta" AS ENUM ('SAN_LUIS', 'ZONAMERICA', 'SHOPPINGCAR', 'SANTA_ROSA', 'AUTOBULEVAR', 'PEDERNAL', 'HOMERO_DE_LEON', 'CONCORDE', 'ROVEIRA');
 
 -- CreateEnum
 CREATE TYPE "EstadoCredito" AS ENUM ('PENDIENTE', 'APROBADO', 'RECHAZADO');
@@ -44,13 +47,16 @@ CREATE TYPE "TipoComprobante" AS ENUM ('FACTURA', 'NOTA_CREDITO');
 CREATE TYPE "IvaRate" AS ENUM ('EXENTO', 'DIEZ', 'VEINTIDOS');
 
 -- CreateEnum
-CREATE TYPE "Banco" AS ENUM ('BBVA', 'SANTANDER');
+CREATE TYPE "Banco" AS ENUM ('BBVA', 'SANTANDER', 'GASTOS_TALLER');
 
 -- CreateEnum
 CREATE TYPE "TipoMovimiento" AS ENUM ('INGRESO', 'EGRESO');
 
 -- CreateEnum
 CREATE TYPE "TipoDocumento" AS ENUM ('CONFORME', 'PROMESA_COMPRAVENTA', 'ORDEN_TALLER');
+
+-- CreateEnum
+CREATE TYPE "FormaPago" AS ENUM ('CONTADO', 'FINANCIADO');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -61,6 +67,7 @@ CREATE TABLE "User" (
     "activo" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "esVendedor" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -137,6 +144,7 @@ CREATE TABLE "Vehiculo" (
     "fechaIngreso" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "responsableId" TEXT,
 
     CONSTRAINT "Vehiculo_pkey" PRIMARY KEY ("id")
 );
@@ -240,6 +248,7 @@ CREATE TABLE "EscribaniaTramite" (
     "fechaEntregaTitulos" TIMESTAMP(3),
     "ubicacionTitulos" "UbicacionTitulos" NOT NULL DEFAULT 'CLIENTE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "comentarios" TEXT,
 
     CONSTRAINT "EscribaniaTramite_pkey" PRIMARY KEY ("id")
 );
@@ -256,6 +265,7 @@ CREATE TABLE "FinanciacionTitulo" (
     "costoMoneda" "Moneda" NOT NULL DEFAULT 'USD',
     "cartaDePago" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "formaPago" "FormaPago" NOT NULL DEFAULT 'CONTADO',
 
     CONSTRAINT "FinanciacionTitulo_pkey" PRIMARY KEY ("id")
 );
@@ -471,6 +481,20 @@ CREATE TABLE "Configuracion" (
     CONSTRAINT "Configuracion_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "AuditLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "userNombre" TEXT NOT NULL,
+    "accion" TEXT NOT NULL,
+    "entidad" TEXT NOT NULL,
+    "entidadId" TEXT,
+    "descripcion" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -534,23 +558,32 @@ CREATE INDEX "MovimientoBancario_cuentaId_fecha_idx" ON "MovimientoBancario"("cu
 -- CreateIndex
 CREATE UNIQUE INDEX "DocumentoTemplate_tipo_key" ON "DocumentoTemplate"("tipo");
 
--- AddForeignKey
-ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_entidad_idx" ON "AuditLog"("entidad");
 
 -- AddForeignKey
 ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "Permission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserPermission" ADD CONSTRAINT "UserPermission_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserPermission" ADD CONSTRAINT "UserPermission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "Permission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserPermission" ADD CONSTRAINT "UserPermission_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Vehiculo" ADD CONSTRAINT "Vehiculo_responsableId_fkey" FOREIGN KEY ("responsableId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "VehiculoCosteo" ADD CONSTRAINT "VehiculoCosteo_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -559,31 +592,31 @@ ALTER TABLE "VehiculoCosteo" ADD CONSTRAINT "VehiculoCosteo_vehiculoId_fkey" FOR
 ALTER TABLE "GastoLine" ADD CONSTRAINT "GastoLine_costeoId_fkey" FOREIGN KEY ("costeoId") REFERENCES "VehiculoCosteo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Venta" ADD CONSTRAINT "Venta_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Venta" ADD CONSTRAINT "Venta_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Venta" ADD CONSTRAINT "Venta_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Venta" ADD CONSTRAINT "Venta_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Venta" ADD CONSTRAINT "Venta_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CreditoBBVA" ADD CONSTRAINT "CreditoBBVA_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "CreditoBBVA" ADD CONSTRAINT "CreditoBBVA_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "EscribaniaTramite" ADD CONSTRAINT "EscribaniaTramite_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "CreditoBBVA" ADD CONSTRAINT "CreditoBBVA_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EscribaniaTramite" ADD CONSTRAINT "EscribaniaTramite_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FinanciacionTitulo" ADD CONSTRAINT "FinanciacionTitulo_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "EscribaniaTramite" ADD CONSTRAINT "EscribaniaTramite_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "FinanciacionTitulo" ADD CONSTRAINT "FinanciacionTitulo_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FinanciacionTitulo" ADD CONSTRAINT "FinanciacionTitulo_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EntregaTitulo" ADD CONSTRAINT "EntregaTitulo_financiacionTituloId_fkey" FOREIGN KEY ("financiacionTituloId") REFERENCES "FinanciacionTitulo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -604,10 +637,10 @@ ALTER TABLE "FinanciacionPropia" ADD CONSTRAINT "FinanciacionPropia_vehiculoId_f
 ALTER TABLE "CuotaPropia" ADD CONSTRAINT "CuotaPropia_financiacionPropiaId_fkey" FOREIGN KEY ("financiacionPropiaId") REFERENCES "FinanciacionPropia"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Conforme" ADD CONSTRAINT "Conforme_financiacionPropiaId_fkey" FOREIGN KEY ("financiacionPropiaId") REFERENCES "FinanciacionPropia"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Conforme" ADD CONSTRAINT "Conforme_cuotaId_fkey" FOREIGN KEY ("cuotaId") REFERENCES "CuotaPropia"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Conforme" ADD CONSTRAINT "Conforme_cuotaId_fkey" FOREIGN KEY ("cuotaId") REFERENCES "CuotaPropia"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Conforme" ADD CONSTRAINT "Conforme_financiacionPropiaId_fkey" FOREIGN KEY ("financiacionPropiaId") REFERENCES "FinanciacionPropia"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ConformeFirmante" ADD CONSTRAINT "ConformeFirmante_conformeId_fkey" FOREIGN KEY ("conformeId") REFERENCES "Conforme"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -626,3 +659,4 @@ ALTER TABLE "MovimientoBancario" ADD CONSTRAINT "MovimientoBancario_transferenci
 
 -- AddForeignKey
 ALTER TABLE "OrdenTaller" ADD CONSTRAINT "OrdenTaller_vehiculoId_fkey" FOREIGN KEY ("vehiculoId") REFERENCES "Vehiculo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+

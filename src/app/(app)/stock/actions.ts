@@ -49,6 +49,9 @@ function formDataToRaw(formData: FormData): Record<string, unknown> {
     }
   }
   raw.segundaLlave = formData.get("segundaLlave") === "on" || formData.get("segundaLlave") === "true";
+  if (formData.has("esVehiculo")) {
+    raw.esVehiculo = formData.get("esVehiculo") !== "false";
+  }
   return raw;
 }
 
@@ -61,7 +64,7 @@ export async function createVehiculo(formData: FormData) {
   }
   const vehiculo = await db.vehiculo.create({ data: parsed.data });
   revalidatePath("/stock");
-  redirect(`/stock/${vehiculo.id}`);
+  redirect(vehiculo.esVehiculo ? `/stock/${vehiculo.id}` : "/stock?tab=accesorios");
 }
 
 export async function updateVehiculo(id: string, formData: FormData) {

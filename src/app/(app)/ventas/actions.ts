@@ -62,7 +62,7 @@ export async function createVenta(formData: FormData) {
     },
   });
 
-  await db.vehiculo.update({ where: { id: data.vehiculoId }, data: { estado: "SENADO" } });
+  await db.vehiculo.update({ where: { id: data.vehiculoId }, data: { estado: "VENDIDO" } });
 
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");

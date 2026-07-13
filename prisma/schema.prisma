@@ -1,7 +1,6 @@
 // Quiroga Automóviles — CRM/ERP data model
 // Money is always stored as Int cents (never Float). Exchange rates are stored
-// as Int "micros" scaled by 10000 (e.g. 40.50 -> 405000) to avoid any floating
-// point and to sidestep Decimal-on-SQLite ambiguity — see src/lib/money.ts.
+// as Int "micros" scaled by 10000 (e.g. 40.50 -> 405000) to avoid floating point.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,7 +12,446 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ---------- Enums ----------
+model User {
+  id           String           @id @default(cuid())
+  nombre       String
+  email        String           @unique
+  passwordHash String
+  activo       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  esVendedor   Boolean          @default(false)
+  permissions  UserPermission[]
+  roles        UserRole[]
+  vehiculosResponsable Vehiculo[]
+  ventas       Venta[]          @relation("VendedorVentas")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  nombre      String
+  descripcion String?
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Permission {
+  id    String           @id @default(cuid())
+  key   String           @unique
+  label String
+  grupo String
+  roles RolePermission[]
+  users UserPermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserPermission {
+  userId       String
+  permissionId String
+  effect       PermissionEffect
+  permission   Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+}
+
+model Vehiculo {
+  id                   String               @id @default(cuid())
+  marca                String
+  modelo               String
+  version              String?
+  anio                 Int?
+  color                String?
+  km                   Int?
+  motor                String?
+  transmision          String?
+  ubicacion            Ubicacion            @default(ZONAMERICA)
+  precioVentaUsdCents  Int?
+  matricula            String?
+  padron               String?
+  patenteCuotaCents    Int?
+  patenteAnualCents    Int?
+  propietario          String?
+  tipoPropiedad        TipoPropiedad        @default(PROPIA)
+  segundaLlave         Boolean              @default(false)
+  ubicacionLibreta     String?
+  comentarios          String?
+  esVehiculo           Boolean              @default(true)
+  estado               EstadoVehiculo       @default(APRONTANDO)
+  fechaIngreso         DateTime             @default(now())
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  responsableId        String?
+  creditosBBVA         CreditoBBVA[]
+  deudasCliente        DeudaCliente[]
+  tramitesEscribania   EscribaniaTramite[]
+  financiacionesPropia FinanciacionPropia[]
+  financiacionesTitulo FinanciacionTitulo[]
+  ordenesTaller        OrdenTaller[]
+  responsable          User?                @relation(fields: [responsableId], references: [id])
+  costeo               VehiculoCosteo?
+  ventas               Venta[]
+
+  @@index([matricula])
+  @@index([marca])
+  @@index([estado])
+}
+
+model Cliente {
+  id                   String               @id @default(cuid())
+  nombre               String
+  apellido             String?
+  ci                   String?
+  contacto             String?
+  direccion            String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  creditosBBVA         CreditoBBVA[]
+  deudas               DeudaCliente[]
+  tramitesEscribania   EscribaniaTramite[]
+  financiacionesPropia FinanciacionPropia[]
+  financiacionesTitulo FinanciacionTitulo[]
+  ventas               Venta[]
+
+  @@index([nombre])
+  @@index([ci])
+}
+
+model VehiculoCosteo {
+  id                      String      @id @default(cuid())
+  vehiculoId              String      @unique
+  tipoCambioMicros        Int         @default(0)
+  fechaCompra             DateTime?
+  fechaPublicacion        DateTime?
+  fechaVenta              DateTime?
+  precioCompraUsdCents    Int         @default(0)
+  valorPatenteUsdCents    Int         @default(0)
+  cantCuotasPatentePagas  Int         @default(0)
+  precioVentaRealUsdCents Int         @default(0)
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  gastos                  GastoLine[]
+  vehiculo                Vehiculo    @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
+}
+
+model GastoLine {
+  id          String         @id @default(cuid())
+  costeoId    String
+  descripcion String
+  moneda      Moneda         @default(USD)
+  montoCents  Int
+  orden       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  costeo      VehiculoCosteo @relation(fields: [costeoId], references: [id], onDelete: Cascade)
+}
+
+model Venta {
+  id                     String     @id @default(cuid())
+  vehiculoId             String
+  clienteId              String?
+  fechaSena              DateTime?
+  senaUsdCents           Int        @default(0)
+  fechaEntrega           DateTime?
+  precioVentaUsdCents    Int
+  vendedorId             String?
+  localVenta             LocalVenta @default(ZONAMERICA)
+  propietarioVehiculo    String?
+  comisionVentaUsdCents  Int        @default(0)
+  comisionTituloUsdCents Int        @default(0)
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  cliente                Cliente?   @relation(fields: [clienteId], references: [id])
+  vehiculo               Vehiculo   @relation(fields: [vehiculoId], references: [id])
+  vendedor               User?      @relation("VendedorVentas", fields: [vendedorId], references: [id])
+
+  @@index([fechaEntrega])
+  @@index([vendedorId])
+}
+
+model CreditoBBVA {
+  id                      String        @id @default(cuid())
+  nombre                  String
+  ci                      String?
+  contacto                String?
+  montoSolicitadoUsdCents Int
+  fechaFirma              DateTime?
+  estado                  EstadoCredito @default(PENDIENTE)
+  vehiculoId              String?
+  clienteId               String?
+  createdAt               DateTime      @default(now())
+  cliente                 Cliente?      @relation(fields: [clienteId], references: [id])
+  vehiculo                Vehiculo?     @relation(fields: [vehiculoId], references: [id])
+
+  @@index([fechaFirma])
+}
+
+model EscribaniaTramite {
+  id                  String           @id @default(cuid())
+  vehiculoId          String
+  clienteId           String?
+  fecha               DateTime?
+  tipoDoc             TipoDoc
+  titulosCon          Escribano
+  fechaFirma          DateTime?
+  pagoEscribaniaCents Int              @default(0)
+  pagoMoneda          Moneda           @default(USD)
+  fechaPago           DateTime?
+  cobroAlCliente      CobroCliente     @default(CONTADO)
+  cobroMontoCents     Int              @default(0)
+  fechaCobro          DateTime?
+  fechaEntregaTitulos DateTime?
+  ubicacionTitulos    UbicacionTitulos @default(CLIENTE)
+  createdAt           DateTime         @default(now())
+  comentarios         String?
+  cliente             Cliente?         @relation(fields: [clienteId], references: [id])
+  vehiculo            Vehiculo         @relation(fields: [vehiculoId], references: [id])
+
+  @@index([fecha])
+}
+
+model FinanciacionTitulo {
+  id                   String          @id @default(cuid())
+  vehiculoId           String
+  clienteId            String?
+  contacto             String?
+  fechaVenta           DateTime?
+  fechaFirma           DateTime?
+  costoEscribaniaCents Int             @default(0)
+  costoMoneda          Moneda          @default(USD)
+  cartaDePago          Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  formaPago            FormaPago       @default(CONTADO)
+  entregas             EntregaTitulo[]
+  cliente              Cliente?        @relation(fields: [clienteId], references: [id])
+  vehiculo             Vehiculo        @relation(fields: [vehiculoId], references: [id])
+}
+
+model EntregaTitulo {
+  id                   String             @id @default(cuid())
+  financiacionTituloId String
+  numero               Int
+  montoCents           Int
+  fecha                DateTime?
+  financiacionTitulo   FinanciacionTitulo @relation(fields: [financiacionTituloId], references: [id], onDelete: Cascade)
+
+  @@unique([financiacionTituloId, numero])
+}
+
+model Empleado {
+  id                 String              @id @default(cuid())
+  nombre             String
+  apellido           String?
+  tipoPago           TipoPago            @default(MENSUAL)
+  sueldoMensualCents Int?
+  jornalDiarioCents  Int?
+  activo             Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  asistencias        AsistenciaDia[]
+  descuentos         DescuentoEmpleado[]
+}
+
+model AsistenciaDia {
+  id         String           @id @default(cuid())
+  empleadoId String
+  fecha      DateTime
+  estado     EstadoAsistencia @default(AUSENTE)
+  empleado   Empleado         @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+
+  @@unique([empleadoId, fecha])
+}
+
+model DescuentoEmpleado {
+  id         String   @id @default(cuid())
+  empleadoId String
+  fecha      DateTime
+  concepto   String
+  montoCents Int
+  moneda     Moneda   @default(UYU)
+  createdAt  DateTime @default(now())
+  empleado   Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+}
+
+model FinanciacionPropia {
+  id                      String        @id @default(cuid())
+  clienteId               String?
+  nombre                  String
+  contacto                String?
+  vehiculoId              String?
+  montoFinanciadoUsdCents Int
+  cantidadCuotas          Int
+  montoCuotaUsdCents      Int
+  fechaPrimeraCuota       DateTime?
+  diaVencimientoMensual   Int           @default(10)
+  createdAt               DateTime      @default(now())
+  conformes               Conforme[]
+  cuotas                  CuotaPropia[]
+  cliente                 Cliente?      @relation(fields: [clienteId], references: [id])
+  vehiculo                Vehiculo?     @relation(fields: [vehiculoId], references: [id])
+}
+
+model CuotaPropia {
+  id                   String             @id @default(cuid())
+  financiacionPropiaId String
+  numero               Int
+  montoCents           Int
+  fechaVencimiento     DateTime
+  fechaPago            DateTime?
+  pagada               Boolean            @default(false)
+  conforme             Conforme?
+  financiacionPropia   FinanciacionPropia @relation(fields: [financiacionPropiaId], references: [id], onDelete: Cascade)
+
+  @@unique([financiacionPropiaId, numero])
+}
+
+model Conforme {
+  id                   String             @id @default(cuid())
+  financiacionPropiaId String
+  cuotaId              String?            @unique
+  montoCuotaCents      Int
+  fechaVencimiento     DateTime
+  cantidadCuotas       Int
+  createdAt            DateTime           @default(now())
+  cuota                CuotaPropia?       @relation(fields: [cuotaId], references: [id])
+  financiacionPropia   FinanciacionPropia @relation(fields: [financiacionPropiaId], references: [id], onDelete: Cascade)
+  firmantes            ConformeFirmante[]
+}
+
+model ConformeFirmante {
+  id         String   @id @default(cuid())
+  conformeId String
+  nombre     String
+  ci         String?
+  orden      Int      @default(1)
+  conforme   Conforme @relation(fields: [conformeId], references: [id], onDelete: Cascade)
+}
+
+model DeudaCliente {
+  id         String    @id @default(cuid())
+  clienteId  String?
+  nombre     String
+  contacto   String?
+  vehiculoId String?
+  matricula  String?
+  concepto   String
+  montoCents Int
+  moneda     Moneda    @default(UYU)
+  saldado    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  cliente    Cliente?  @relation(fields: [clienteId], references: [id])
+  vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
+}
+
+model GastoContadora {
+  id                String          @id @default(cuid())
+  tipoComprobante   TipoComprobante @default(FACTURA)
+  fecha             DateTime
+  numeroFactura     String?
+  proveedor         String
+  moneda            Moneda          @default(UYU)
+  ivaRate           IvaRate         @default(VEINTIDOS)
+  importeTotalCents Int
+  createdAt         DateTime        @default(now())
+
+  @@index([fecha])
+}
+
+model CuentaBancaria {
+  id                     String               @id @default(cuid())
+  nombre                 Banco                @unique
+  saldoInicialPesosCents Int                  @default(0)
+  saldoInicialUsdCents   Int                  @default(0)
+  movimientos            MovimientoBancario[]
+}
+
+model MovimientoBancario {
+  id              String                     @id @default(cuid())
+  cuentaId        String
+  fecha           DateTime
+  detalle         String
+  comentario      String?
+  tipo            TipoMovimiento
+  montoPesosCents Int                        @default(0)
+  montoUsdCents   Int                        @default(0)
+  categoria       String?
+  transferenciaId String?
+  createdAt       DateTime                   @default(now())
+  cuenta          CuentaBancaria             @relation(fields: [cuentaId], references: [id])
+  transferencia   TransferenciaEntreCuentas? @relation(fields: [transferenciaId], references: [id])
+
+  @@index([cuentaId, fecha])
+}
+
+model TransferenciaEntreCuentas {
+  id                    String               @id @default(cuid())
+  fecha                 DateTime
+  cuentaOrigenId        String
+  cuentaDestinoId       String
+  montoPesosCents       Int                  @default(0)
+  montoUsdCents         Int                  @default(0)
+  comisionBancariaCents Int                  @default(0)
+  comentario            String?
+  createdAt             DateTime             @default(now())
+  movimientos           MovimientoBancario[]
+}
+
+model DocumentoTemplate {
+  id            String        @id @default(cuid())
+  tipo          TipoDocumento @unique
+  nombre        String
+  contenidoBase String
+  activo        Boolean       @default(true)
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrdenTaller {
+  id           String   @id @default(cuid())
+  vehiculoId   String
+  fechaIngreso DateTime
+  trabajos     String
+  repuestos    String?
+  responsable  String?
+  createdAt    DateTime @default(now())
+  vehiculo     Vehiculo @relation(fields: [vehiculoId], references: [id])
+}
+
+model Configuracion {
+  id                     Int      @id @default(1)
+  tipoCambioGlobalMicros Int      @default(400000)
+  nombreEmpresa          String   @default("Quiroga Automóviles")
+  updatedAt              DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id
+  userId      String?
+  userNombre  String
+  accion      String
+  entidad     String
+  entidadId   String?
+  descripcion String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entidad])
+}
 
 enum PermissionEffect {
   GRANT
@@ -37,6 +475,7 @@ enum EstadoVehiculo {
   APRONTANDO
   SENADO
   PUBLICADO
+  VENDIDO
 }
 
 enum Moneda {
@@ -47,6 +486,13 @@ enum Moneda {
 enum LocalVenta {
   SAN_LUIS
   ZONAMERICA
+  SHOPPINGCAR
+  SANTA_ROSA
+  AUTOBULEVAR
+  PEDERNAL
+  HOMERO_DE_LEON
+  CONCORDE
+  ROVEIRA
 }
 
 enum EstadoCredito {
@@ -107,6 +553,7 @@ enum IvaRate {
 enum Banco {
   BBVA
   SANTANDER
+  GASTOS_TALLER
 }
 
 enum TipoMovimiento {
@@ -120,461 +567,7 @@ enum TipoDocumento {
   ORDEN_TALLER
 }
 
-// ---------- Auth & Permissions ----------
-
-model User {
-  id           String   @id @default(cuid())
-  nombre       String
-  email        String   @unique
-  passwordHash String
-  activo       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  roles       UserRole[]
-  permissions UserPermission[]
-  ventas      Venta[]          @relation("VendedorVentas")
-}
-
-model Role {
-  id          String  @id @default(cuid())
-  key         String  @unique
-  nombre      String
-  descripcion String?
-
-  permissions RolePermission[]
-  users       UserRole[]
-}
-
-model UserRole {
-  userId String
-  roleId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@id([userId, roleId])
-}
-
-model Permission {
-  id    String @id @default(cuid())
-  key   String @unique
-  label String
-  grupo String
-
-  roles RolePermission[]
-  users UserPermission[]
-}
-
-model RolePermission {
-  roleId       String
-  permissionId String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, permissionId])
-}
-
-model UserPermission {
-  userId       String
-  permissionId String
-  effect       PermissionEffect
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([userId, permissionId])
-}
-
-// ---------- Shared spine: Vehiculo & Cliente ----------
-
-model Vehiculo {
-  id                  String         @id @default(cuid())
-  marca               String
-  modelo              String
-  version             String?
-  anio                Int?
-  color               String?
-  km                  Int?
-  motor               String?
-  transmision         String?
-  ubicacion           Ubicacion      @default(ZONAMERICA)
-  precioVentaUsdCents Int?
-  matricula           String?
-  padron              String?
-  patenteCuotaCents   Int?
-  patenteAnualCents   Int?
-  propietario         String?
-  tipoPropiedad       TipoPropiedad  @default(PROPIA)
-  segundaLlave        Boolean        @default(false)
-  ubicacionLibreta    String?
-  comentarios         String?
-  esVehiculo          Boolean        @default(true)
-  estado              EstadoVehiculo @default(APRONTANDO)
-  fechaIngreso        DateTime       @default(now())
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-
-  costeo               VehiculoCosteo?
-  ventas               Venta[]
-  creditosBBVA         CreditoBBVA[]
-  tramitesEscribania   EscribaniaTramite[]
-  financiacionesTitulo FinanciacionTitulo[]
-  financiacionesPropia FinanciacionPropia[]
-  deudasCliente        DeudaCliente[]
-  ordenesTaller        OrdenTaller[]
-
-  @@index([matricula])
-  @@index([marca])
-  @@index([estado])
-}
-
-model Cliente {
-  id        String   @id @default(cuid())
-  nombre    String
-  apellido  String?
-  ci        String?
-  contacto  String?
-  direccion String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ventas               Venta[]
-  creditosBBVA         CreditoBBVA[]
-  tramitesEscribania   EscribaniaTramite[]
-  financiacionesTitulo FinanciacionTitulo[]
-  financiacionesPropia FinanciacionPropia[]
-  deudas               DeudaCliente[]
-
-  @@index([nombre])
-  @@index([ci])
-}
-
-// ---------- Costos de Vehículo ----------
-
-model VehiculoCosteo {
-  id                      String   @id @default(cuid())
-  vehiculoId              String   @unique
-  vehiculo                Vehiculo @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
-  tipoCambioMicros        Int      @default(0) // 0 = usa Configuracion.tipoCambioGlobalMicros
-  fechaCompra             DateTime?
-  fechaPublicacion        DateTime?
-  fechaVenta              DateTime?
-  precioCompraUsdCents    Int      @default(0)
-  valorPatenteUsdCents    Int      @default(0)
-  cantCuotasPatentePagas  Int      @default(0)
-  precioVentaRealUsdCents Int      @default(0)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-
-  gastos GastoLine[]
-}
-
-model GastoLine {
-  id          String         @id @default(cuid())
-  costeoId    String
-  costeo      VehiculoCosteo @relation(fields: [costeoId], references: [id], onDelete: Cascade)
-  descripcion String
-  moneda      Moneda         @default(USD)
-  montoCents  Int
-  orden       Int            @default(0)
-  createdAt   DateTime       @default(now())
-}
-
-// ---------- Ventas ----------
-
-model Venta {
-  id                     String     @id @default(cuid())
-  vehiculoId             String
-  vehiculo               Vehiculo   @relation(fields: [vehiculoId], references: [id])
-  clienteId              String?
-  cliente                Cliente?   @relation(fields: [clienteId], references: [id])
-  fechaSena              DateTime?
-  senaUsdCents           Int        @default(0)
-  fechaEntrega           DateTime?
-  precioVentaUsdCents    Int
-  vendedorId             String?
-  vendedor               User?      @relation("VendedorVentas", fields: [vendedorId], references: [id])
-  localVenta             LocalVenta @default(ZONAMERICA)
-  propietarioVehiculo    String?
-  comisionVentaUsdCents  Int        @default(0)
-  comisionTituloUsdCents Int        @default(0)
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-
-  @@index([fechaEntrega])
-  @@index([vendedorId])
-}
-
-// ---------- Créditos BBVA ----------
-
-model CreditoBBVA {
-  id                      String        @id @default(cuid())
-  nombre                  String
-  ci                      String?
-  contacto                String?
-  montoSolicitadoUsdCents Int
-  fechaFirma              DateTime?
-  estado                  EstadoCredito @default(PENDIENTE)
-  vehiculoId              String?
-  vehiculo                Vehiculo?     @relation(fields: [vehiculoId], references: [id])
-  clienteId               String?
-  cliente                 Cliente?      @relation(fields: [clienteId], references: [id])
-  createdAt               DateTime      @default(now())
-
-  @@index([fechaFirma])
-}
-
-// ---------- Escribanía ----------
-
-model EscribaniaTramite {
-  id                  String           @id @default(cuid())
-  vehiculoId          String
-  vehiculo            Vehiculo         @relation(fields: [vehiculoId], references: [id])
-  clienteId           String?
-  cliente             Cliente?         @relation(fields: [clienteId], references: [id])
-  fecha               DateTime?
-  tipoDoc             TipoDoc
-  titulosCon          Escribano
-  fechaFirma          DateTime?
-  pagoEscribaniaCents Int              @default(0)
-  pagoMoneda          Moneda           @default(USD)
-  fechaPago           DateTime?
-  cobroAlCliente      CobroCliente     @default(CONTADO)
-  cobroMontoCents     Int              @default(0)
-  fechaCobro          DateTime?
-  fechaEntregaTitulos DateTime?
-  ubicacionTitulos    UbicacionTitulos @default(CLIENTE)
-  createdAt           DateTime         @default(now())
-
-  @@index([fecha])
-}
-
-// ---------- Financiación de Títulos ----------
-
-model FinanciacionTitulo {
-  id                   String    @id @default(cuid())
-  vehiculoId           String
-  vehiculo             Vehiculo  @relation(fields: [vehiculoId], references: [id])
-  clienteId            String?
-  cliente              Cliente?  @relation(fields: [clienteId], references: [id])
-  contacto             String?
-  fechaVenta           DateTime?
-  fechaFirma           DateTime?
-  costoEscribaniaCents Int       @default(0)
-  costoMoneda          Moneda    @default(USD)
-  cartaDePago          Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-
-  entregas EntregaTitulo[]
-}
-
-model EntregaTitulo {
-  id                   String              @id @default(cuid())
-  financiacionTituloId String
-  financiacionTitulo   FinanciacionTitulo  @relation(fields: [financiacionTituloId], references: [id], onDelete: Cascade)
-  numero               Int
-  montoCents           Int
-  fecha                DateTime?
-
-  @@unique([financiacionTituloId, numero])
-}
-
-// ---------- Personal ----------
-
-model Empleado {
-  id                 String   @id @default(cuid())
-  nombre             String
-  apellido           String?
-  tipoPago           TipoPago @default(MENSUAL)
-  sueldoMensualCents Int?
-  jornalDiarioCents  Int?
-  activo             Boolean  @default(true)
-  createdAt          DateTime @default(now())
-
-  asistencias AsistenciaDia[]
-  descuentos  DescuentoEmpleado[]
-}
-
-model AsistenciaDia {
-  id         String           @id @default(cuid())
-  empleadoId String
-  empleado   Empleado         @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
-  fecha      DateTime
-  estado     EstadoAsistencia @default(AUSENTE)
-
-  @@unique([empleadoId, fecha])
-}
-
-model DescuentoEmpleado {
-  id         String   @id @default(cuid())
-  empleadoId String
-  empleado   Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
-  fecha      DateTime
-  concepto   String
-  montoCents Int
-  moneda     Moneda   @default(UYU)
-  createdAt  DateTime @default(now())
-}
-
-// ---------- Financiación Propia (Jorge Autos) + Conformes + Deudas ----------
-
-model FinanciacionPropia {
-  id                      String    @id @default(cuid())
-  clienteId               String?
-  cliente                 Cliente?  @relation(fields: [clienteId], references: [id])
-  nombre                  String
-  contacto                String?
-  vehiculoId              String?
-  vehiculo                Vehiculo? @relation(fields: [vehiculoId], references: [id])
-  montoFinanciadoUsdCents Int
-  cantidadCuotas          Int
-  montoCuotaUsdCents      Int
-  fechaPrimeraCuota       DateTime?
-  diaVencimientoMensual   Int       @default(10)
-  createdAt               DateTime  @default(now())
-
-  cuotas    CuotaPropia[]
-  conformes Conforme[]
-}
-
-model CuotaPropia {
-  id                   String              @id @default(cuid())
-  financiacionPropiaId String
-  financiacionPropia   FinanciacionPropia  @relation(fields: [financiacionPropiaId], references: [id], onDelete: Cascade)
-  numero               Int
-  montoCents           Int
-  fechaVencimiento     DateTime
-  fechaPago            DateTime?
-  pagada               Boolean             @default(false)
-  conforme             Conforme?
-
-  @@unique([financiacionPropiaId, numero])
-}
-
-model Conforme {
-  id                   String             @id @default(cuid())
-  financiacionPropiaId String
-  financiacionPropia   FinanciacionPropia @relation(fields: [financiacionPropiaId], references: [id], onDelete: Cascade)
-  cuotaId              String?            @unique
-  cuota                CuotaPropia?       @relation(fields: [cuotaId], references: [id])
-  montoCuotaCents      Int
-  fechaVencimiento     DateTime
-  cantidadCuotas       Int
-  createdAt            DateTime           @default(now())
-
-  firmantes ConformeFirmante[]
-}
-
-model ConformeFirmante {
-  id         String   @id @default(cuid())
-  conformeId String
-  conforme   Conforme @relation(fields: [conformeId], references: [id], onDelete: Cascade)
-  nombre     String
-  ci         String?
-  orden      Int      @default(1)
-}
-
-model DeudaCliente {
-  id         String   @id @default(cuid())
-  clienteId  String?
-  cliente    Cliente? @relation(fields: [clienteId], references: [id])
-  nombre     String
-  contacto   String?
-  vehiculoId String?
-  vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
-  matricula  String?
-  concepto   String
-  montoCents Int
-  moneda     Moneda   @default(UYU)
-  saldado    Boolean  @default(false)
-  createdAt  DateTime @default(now())
-}
-
-// ---------- Contadora ----------
-
-model GastoContadora {
-  id                String          @id @default(cuid())
-  tipoComprobante   TipoComprobante @default(FACTURA)
-  fecha             DateTime
-  numeroFactura     String?
-  proveedor         String
-  moneda            Moneda          @default(UYU)
-  ivaRate           IvaRate         @default(VEINTIDOS)
-  importeTotalCents Int
-  createdAt         DateTime        @default(now())
-
-  @@index([fecha])
-}
-
-// ---------- Bancos ----------
-
-model CuentaBancaria {
-  id                     String @id @default(cuid())
-  nombre                 Banco  @unique
-  saldoInicialPesosCents Int    @default(0)
-  saldoInicialUsdCents   Int    @default(0)
-
-  movimientos MovimientoBancario[]
-}
-
-model MovimientoBancario {
-  id              String                     @id @default(cuid())
-  cuentaId        String
-  cuenta          CuentaBancaria             @relation(fields: [cuentaId], references: [id])
-  fecha           DateTime
-  detalle         String
-  comentario      String?
-  tipo            TipoMovimiento
-  montoPesosCents Int                        @default(0)
-  montoUsdCents   Int                        @default(0)
-  categoria       String?
-  transferenciaId String?
-  transferencia   TransferenciaEntreCuentas? @relation(fields: [transferenciaId], references: [id])
-  createdAt       DateTime                   @default(now())
-
-  @@index([cuentaId, fecha])
-}
-
-model TransferenciaEntreCuentas {
-  id                    String   @id @default(cuid())
-  fecha                 DateTime
-  cuentaOrigenId        String
-  cuentaDestinoId       String
-  montoPesosCents       Int      @default(0)
-  montoUsdCents         Int      @default(0)
-  comisionBancariaCents Int      @default(0)
-  comentario            String?
-  createdAt             DateTime @default(now())
-
-  movimientos MovimientoBancario[]
-}
-
-// ---------- Documentos ----------
-
-model DocumentoTemplate {
-  id            String        @id @default(cuid())
-  tipo          TipoDocumento @unique
-  nombre        String
-  contenidoBase String
-  activo        Boolean       @default(true)
-  updatedAt     DateTime      @updatedAt
-}
-
-model OrdenTaller {
-  id             String    @id @default(cuid())
-  vehiculoId     String
-  vehiculo       Vehiculo  @relation(fields: [vehiculoId], references: [id])
-  fechaIngreso   DateTime
-  trabajos       String
-  repuestos      String?
-  responsable    String?
-  createdAt      DateTime  @default(now())
-}
-
-// ---------- Configuración ----------
-
-model Configuracion {
-  id                       Int      @id @default(1)
-  tipoCambioGlobalMicros   Int      @default(400000)
-  nombreEmpresa            String   @default("Quiroga Automóviles")
-  updatedAt                DateTime @updatedAt
+enum FormaPago {
+  CONTADO
+  FINANCIADO
 }

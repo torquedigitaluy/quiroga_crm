@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, FileDown } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan, getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
@@ -40,14 +40,22 @@ export default async function BBVAPage({ searchParams }: { searchParams: Promise
             {creditos.length} créditos · Total solicitado: {formatCents(totalSolicitado, "USD")}
           </p>
         </div>
-        <Can permission="bbva.edit">
-          <Button asChild>
-            <Link href="/bbva/nuevo">
-              <Plus className="h-4 w-4" />
-              Nuevo crédito
-            </Link>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <a href="/api/bbva/export">
+              <FileDown className="h-4 w-4" />
+              Exportar Excel
+            </a>
           </Button>
-        </Can>
+          <Can permission="bbva.edit">
+            <Button asChild>
+              <Link href="/bbva/nuevo">
+                <Plus className="h-4 w-4" />
+                Nuevo crédito
+              </Link>
+            </Button>
+          </Can>
+        </div>
       </div>
 
       <form className="flex items-center gap-2">

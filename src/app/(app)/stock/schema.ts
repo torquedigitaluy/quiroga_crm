@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ubicacionEnum = z.enum(["SAN_LUIS", "ZONAMERICA", "TALLER", "PROPIETARIO"]);
 export const tipoPropiedadEnum = z.enum(["PROPIA", "PARTNER", "CONSIGNADO"]);
-export const estadoVehiculoEnum = z.enum(["APRONTANDO", "SENADO", "PUBLICADO"]);
+export const estadoVehiculoEnum = z.enum(["APRONTANDO", "SENADO", "PUBLICADO", "VENDIDO"]);
 
 // All fields optional here; the server action decides which ones the caller
 // is actually allowed to persist based on their effective permissions.

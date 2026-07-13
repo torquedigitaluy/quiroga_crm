@@ -7,6 +7,8 @@ import { computeSaldos } from "@/lib/saldos";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { VentasChart, type VentasMes } from "@/components/dashboard/VentasChart";
+import { RevealableStat } from "@/components/dashboard/RevealableStat";
+import { GananciaPorVehiculo, type GananciaRow } from "@/components/dashboard/GananciaPorVehiculo";
 
 const MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -15,12 +17,14 @@ export default async function DashboardPage() {
   const perms = await getEffectivePermissions(user.id);
 
   // Company-wide money (ganancia, saldos bancarios, deudas de otros clientes) is only
-  // for back-office roles. A vendedor only ever sees figures about their own sales.
+  // for back-office roles. A vendedor only ever sees figures about their own sales, and
+  // taller-only staff (sin acceso a costos/ventas) get a taller-scoped summary instead.
   const puedeVerFinanzasDeLaEmpresa =
     perms.has("costos.view") || perms.has("bancos.view") || perms.has("ventas.view_full");
+  const esSoloTaller = !puedeVerFinanzasDeLaEmpresa && !perms.has("ventas.view_own") && perms.has("taller.view");
 
   const vehiculos = await db.vehiculo.groupBy({ by: ["estado"], where: { esVehiculo: true }, _count: true });
-  const stockPorEstado = { APRONTANDO: 0, SENADO: 0, PUBLICADO: 0 } as Record<string, number>;
+  const stockPorEstado = { APRONTANDO: 0, SENADO: 0, PUBLICADO: 0, VENDIDO: 0 } as Record<string, number>;
   for (const v of vehiculos) stockPorEstado[v.estado] = v._count;
 
   return (
@@ -28,7 +32,11 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Hola, {user.name ?? user.email}</h1>
         <p className="text-sm text-muted-foreground">
-          {puedeVerFinanzasDeLaEmpresa ? "Resumen general de Quiroga Automóviles." : "Tu resumen de ventas."}
+          {puedeVerFinanzasDeLaEmpresa
+            ? "Resumen general de Quiroga Automóviles."
+            : esSoloTaller
+              ? "Resumen de taller."
+              : "Tu resumen de ventas."}
         </p>
       </div>
 
@@ -36,10 +44,13 @@ export default async function DashboardPage() {
         <StatCard label="Taller / Aprontando" value={stockPorEstado.APRONTANDO.toString()} variant="warning" />
         <StatCard label="Señados" value={stockPorEstado.SENADO.toString()} variant="danger" />
         <StatCard label="Publicados" value={stockPorEstado.PUBLICADO.toString()} variant="default" />
+        <StatCard label="Vendidos" value={stockPorEstado.VENDIDO.toString()} variant="success" />
       </div>
 
       {puedeVerFinanzasDeLaEmpresa ? (
         <DashboardEmpresa />
+      ) : esSoloTaller ? (
+        <DashboardTaller />
       ) : (
         <DashboardVendedor vendedorId={user.id} />
       )}
@@ -56,7 +67,10 @@ async function DashboardEmpresa() {
     await Promise.all([
       db.venta.findMany({ where: { fechaEntrega: { gte: monthStart } } }),
       db.venta.findMany({ where: { fechaEntrega: { gte: sixMonthsAgo } } }),
-      db.vehiculoCosteo.findMany({ include: { gastos: true }, where: { precioVentaRealUsdCents: { gt: 0 } } }),
+      db.vehiculoCosteo.findMany({
+        include: { gastos: true, vehiculo: true },
+        where: { precioVentaRealUsdCents: { gt: 0 } },
+      }),
       db.cuentaBancaria.findMany({ include: { movimientos: true } }),
       db.configuracion.findUnique({ where: { id: 1 } }),
       db.cuotaPropia.findMany({
@@ -70,10 +84,20 @@ async function DashboardEmpresa() {
   const configRateMicros = config?.tipoCambioGlobalMicros ?? 400000;
   const totalVentasMes = ventasDelMes.reduce((sum, v) => sum + v.precioVentaUsdCents, 0);
 
-  const gananciaAcumuladaCents = costeos.reduce((sum, c) => {
-    const computed = computeCosteo(c, c.gastos, configRateMicros);
-    return sum + (c.precioVentaRealUsdCents - computed.costoTotalUsdCents);
-  }, 0);
+  const gananciaPorVehiculo: GananciaRow[] = costeos
+    .map((c) => {
+      const computed = computeCosteo(c, c.gastos, configRateMicros);
+      return {
+        vehiculoId: c.vehiculoId,
+        label: `${c.vehiculo.marca} ${c.vehiculo.modelo}${c.vehiculo.matricula ? ` (${c.vehiculo.matricula})` : ""}`,
+        costoTotalCents: computed.costoTotalUsdCents,
+        precioVentaCents: c.precioVentaRealUsdCents,
+        gananciaCents: c.precioVentaRealUsdCents - computed.costoTotalUsdCents,
+      };
+    })
+    .sort((a, b) => b.gananciaCents - a.gananciaCents);
+
+  const gananciaAcumuladaCents = gananciaPorVehiculo.reduce((sum, r) => sum + r.gananciaCents, 0);
 
   const bbva = cuentas.find((c) => c.nombre === "BBVA");
   const santander = cuentas.find((c) => c.nombre === "SANTANDER");
@@ -119,10 +143,13 @@ async function DashboardEmpresa() {
   return (
     <>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <StatCard label="Ventas del mes" value={`${ventasDelMes.length} · ${formatCents(totalVentasMes, "USD")}`} />
-        <StatCard label="Ganancia acumulada" value={formatCents(gananciaAcumuladaCents, "USD")} />
-        <StatCard label="Saldo BBVA" value={saldoBbva ? `${formatCents(saldoBbva.saldoPesosCents, "UYU")} / ${formatCents(saldoBbva.saldoUsdCents, "USD")}` : "—"} />
-        <StatCard
+        <RevealableStat label="Ventas del mes" value={`${ventasDelMes.length} · ${formatCents(totalVentasMes, "USD")}`} />
+        <RevealableStat label="Ganancia acumulada" value={formatCents(gananciaAcumuladaCents, "USD")} />
+        <RevealableStat
+          label="Saldo BBVA"
+          value={saldoBbva ? `${formatCents(saldoBbva.saldoPesosCents, "UYU")} / ${formatCents(saldoBbva.saldoUsdCents, "USD")}` : "—"}
+        />
+        <RevealableStat
           label="Saldo Santander"
           value={saldoSantander ? `${formatCents(saldoSantander.saldoPesosCents, "UYU")} / ${formatCents(saldoSantander.saldoUsdCents, "USD")}` : "—"}
         />
@@ -138,6 +165,8 @@ async function DashboardEmpresa() {
           <VentasChart data={chartData} />
         </CardContent>
       </Card>
+
+      <GananciaPorVehiculo rows={gananciaPorVehiculo} />
 
       <Card>
         <CardHeader>
@@ -164,6 +193,35 @@ async function DashboardEmpresa() {
           {atrasos.length === 0 && <p className="text-sm text-muted-foreground">No hay atrasos registrados. 🎉</p>}
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+async function DashboardTaller() {
+  const [ordenesAbiertas, gastosCuenta] = await Promise.all([
+    db.ordenTaller.count(),
+    db.cuentaBancaria.findUnique({
+      where: { nombre: "GASTOS_TALLER" },
+      include: { movimientos: { where: { fecha: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } } },
+    }),
+  ]);
+
+  const gastoDelMesPesos = gastosCuenta?.movimientos.reduce((sum, m) => sum + m.montoPesosCents, 0) ?? 0;
+  const gastoDelMesUsd = gastosCuenta?.movimientos.reduce((sum, m) => sum + m.montoUsdCents, 0) ?? 0;
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <StatCard label="Órdenes de trabajo totales" value={ordenesAbiertas.toString()} />
+        <StatCard label="Gasto de taller del mes" value={`${formatCents(gastoDelMesPesos, "UYU")} + ${formatCents(gastoDelMesUsd, "USD")}`} />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Cargá gastos y órdenes de trabajo desde{" "}
+        <Link href="/taller" className="text-brand hover:underline">
+          Taller
+        </Link>
+        .
+      </p>
     </>
   );
 }
@@ -239,9 +297,16 @@ function StatCard({
 }: {
   label: string;
   value: string;
-  variant?: "default" | "warning" | "danger";
+  variant?: "default" | "warning" | "danger" | "success";
 }) {
-  const color = variant === "warning" ? "text-warning-foreground" : variant === "danger" ? "text-danger" : "text-foreground";
+  const color =
+    variant === "warning"
+      ? "text-warning-foreground"
+      : variant === "danger"
+        ? "text-danger"
+        : variant === "success"
+          ? "text-success"
+          : "text-foreground";
   return (
     <Card>
       <CardContent className="flex flex-col gap-1 p-4">

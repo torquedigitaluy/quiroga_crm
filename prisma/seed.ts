@@ -58,6 +58,7 @@ async function main() {
       password: "Administracion2026!",
       role: "ADMINISTRACION",
     },
+    { email: "marcial@quiroga.local", nombre: "Marcial Hidalgo", password: "Taller2026!", role: "TALLER" },
   ];
 
   for (const su of seedUsers) {

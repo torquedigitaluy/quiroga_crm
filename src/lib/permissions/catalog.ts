@@ -69,6 +69,10 @@ export const PERMISSIONS: PermissionDef[] = [
   // Clientes
   { key: "clientes.view", label: "Ver buscador de clientes", grupo: "Clientes" },
 
+  // Taller
+  { key: "taller.view", label: "Ver taller (gastos y órdenes de trabajo)", grupo: "Taller" },
+  { key: "taller.edit", label: "Cargar gastos y órdenes de trabajo de taller", grupo: "Taller" },
+
   // Dashboard
   { key: "dashboard.view", label: "Ver panel principal", grupo: "Dashboard" },
 
@@ -84,6 +88,7 @@ export const ROLE_DEFS = {
   CONTADORA: { nombre: "Contadora", descripcion: "Gastos administrativos y bancos" },
   ESCRIBANIA: { nombre: "Escribanía", descripcion: "Trámites de escribanía y títulos" },
   ADMINISTRACION: { nombre: "Administración", descripcion: "Acceso amplio de back-office" },
+  TALLER: { nombre: "Taller", descripcion: "Gastos de taller y órdenes de trabajo, sin acceso a costos ni ganancias" },
 } as const;
 
 export type RoleKey = keyof typeof ROLE_DEFS;
@@ -142,5 +147,11 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "deudas.edit",
     "docs.generate",
     "clientes.view",
+  ],
+  TALLER: [
+    "dashboard.view",
+    "stock.view",
+    "taller.view",
+    "taller.edit",
   ],
 };

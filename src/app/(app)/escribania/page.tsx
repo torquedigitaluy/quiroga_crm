@@ -49,7 +49,7 @@ export default async function EscribaniaPage() {
             <TableHead>Tipo</TableHead>
             <TableHead>Cliente</TableHead>
             <TableHead>Fecha firma</TableHead>
-            <TableHead>Pago escribanía</TableHead>
+            <TableHead>Costo Escribanía</TableHead>
             <TableHead>Cobro al cliente</TableHead>
             <TableHead>Entrega títulos</TableHead>
             <TableHead>Ubicación títulos</TableHead>

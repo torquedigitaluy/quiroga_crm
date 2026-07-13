@@ -29,6 +29,7 @@ export async function createTramite(formData: FormData) {
     cobroAlCliente: String(formData.get("cobroAlCliente") ?? "CONTADO"),
     cobroMontoCents: unitsToCents(parseFloat(String(formData.get("cobroMontoCents") ?? "0")) || 0),
     ubicacionTitulos: String(formData.get("ubicacionTitulos") ?? "CLIENTE"),
+    comentarios: String(formData.get("comentarios") ?? ""),
   };
 
   const parsed = escribaniaSchema.safeParse(raw);
@@ -60,6 +61,7 @@ export async function createTramite(formData: FormData) {
       fechaCobro: dateOrNull(formData.get("fechaCobro")),
       fechaEntregaTitulos: dateOrNull(formData.get("fechaEntregaTitulos")),
       ubicacionTitulos: data.ubicacionTitulos,
+      comentarios: data.comentarios || null,
     },
   });
 

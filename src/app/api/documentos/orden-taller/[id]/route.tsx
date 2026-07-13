@@ -1,10 +1,10 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCanAny } from "@/lib/permissions/engine";
 import { OrdenTallerPDF } from "@/components/pdf/OrdenTallerPDF";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await assertCan("docs.generate");
+  await assertCanAny(["docs.generate", "taller.view"]);
   const { id } = await params;
 
   const orden = await db.ordenTaller.findUnique({ where: { id }, include: { vehiculo: true } });

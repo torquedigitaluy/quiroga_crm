@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { formatCents } from "@/lib/money";
 import { marcarCuotaPagada } from "@/app/(app)/propia/actions";
 
@@ -23,11 +24,17 @@ export function CuotasGrid({
   cuotas,
   editable,
   canGenerateConforme,
+  clienteNombre,
+  clienteContacto,
+  vehiculoLabel,
 }: {
   financiacionId: string;
   cuotas: CuotaData[];
   editable: boolean;
   canGenerateConforme: boolean;
+  clienteNombre?: string;
+  clienteContacto?: string | null;
+  vehiculoLabel?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -44,11 +51,13 @@ export function CuotasGrid({
           <TableHead>Estado</TableHead>
           <TableHead>Pagada</TableHead>
           {canGenerateConforme && <TableHead>Conforme</TableHead>}
+          <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {cuotas.map((c) => {
           const overdue = !c.pagada && new Date(c.fechaVencimiento) < today;
+          const mensaje = `Hola ${clienteNombre ?? ""}, te escribimos de Quiroga Automóviles por la cuota N° ${c.numero} de tu financiación${vehiculoLabel ? ` del ${vehiculoLabel}` : ""}, por ${formatCents(c.montoCents, "USD")}, vencida el ${new Date(c.fechaVencimiento).toLocaleDateString("es-UY")}. ¿Podemos coordinar el pago?`;
           return (
             <TableRow key={c.id}>
               <TableCell>{c.numero}</TableCell>
@@ -85,6 +94,9 @@ export function CuotasGrid({
                   </Button>
                 </TableCell>
               )}
+              <TableCell>
+                {overdue && <WhatsAppButton phone={clienteContacto} message={mensaje} label="Avisar" />}
+              </TableCell>
             </TableRow>
           );
         })}

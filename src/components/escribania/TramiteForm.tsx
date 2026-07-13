@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   TITULOS_CON_LABELS,
@@ -110,7 +111,7 @@ export function TramiteForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label>Pago a escribanía</Label>
+          <Label>Costo Escribanía</Label>
           <Input name="pagoEscribaniaCents" type="number" step="0.01" defaultValue={0} />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -172,6 +173,10 @@ export function TramiteForm({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label>Comentarios</Label>
+          <Textarea name="comentarios" />
         </div>
       </div>
 
