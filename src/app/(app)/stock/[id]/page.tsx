@@ -14,7 +14,10 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
   await assertCan("stock.view");
   const { id } = await params;
 
-  const vehiculo = await db.vehiculo.findUnique({ where: { id } });
+  const [vehiculo, usuarios] = await Promise.all([
+    db.vehiculo.findUnique({ where: { id } }),
+    db.user.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
+  ]);
   if (!vehiculo) notFound();
 
   const user = await getCurrentUser();
@@ -44,14 +47,14 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Can permission="costos.view">
+          {(perms.has("costos.view") || vehiculo.responsableId === user?.id) && (
             <Button variant="outline" asChild>
               <Link href={`/costos/${vehiculo.id}`}>
                 <Calculator className="h-4 w-4" />
                 Ver costos
               </Link>
             </Button>
-          </Can>
+          )}
           <Can permission="stock.delete">
             <DeleteVehiculoButton id={vehiculo.id} />
           </Can>
@@ -62,6 +65,7 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
         initial={vehiculo}
         permissions={formPermissions}
         action={boundUpdate}
+        usuarios={usuarios}
       />
     </div>
   );

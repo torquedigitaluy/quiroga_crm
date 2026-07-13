@@ -1,16 +1,22 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
+import { localVentaLabel } from "@/lib/venta-labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Can } from "@/components/auth/Can";
 
-export default async function VentasPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+export default async function VentasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string; vendedor?: string }>;
+}) {
   await assertCan("ventas.view_full");
-  const { mes } = await searchParams;
+  const { mes, vendedor } = await searchParams;
+  const puedeEditar = await can("ventas.edit");
 
   let dateFilter: { gte: Date; lt: Date } | undefined;
   if (mes) {
@@ -18,11 +24,17 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
     dateFilter = { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) };
   }
 
-  const ventas = await db.venta.findMany({
-    where: dateFilter ? { fechaEntrega: dateFilter } : {},
-    include: { vehiculo: true, cliente: true, vendedor: true },
-    orderBy: { fechaEntrega: "desc" },
-  });
+  const [ventas, vendedores] = await Promise.all([
+    db.venta.findMany({
+      where: {
+        ...(dateFilter ? { fechaEntrega: dateFilter } : {}),
+        ...(vendedor ? { vendedorId: vendedor } : {}),
+      },
+      include: { vehiculo: true, cliente: true, vendedor: true },
+      orderBy: { fechaEntrega: "desc" },
+    }),
+    db.user.findMany({ where: { esVendedor: true }, orderBy: { nombre: "asc" } }),
+  ]);
 
   const totalComisiones = ventas.reduce(
     (sum, v) => sum + v.comisionVentaUsdCents + v.comisionTituloUsdCents,
@@ -48,10 +60,28 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
         </Can>
       </div>
 
-      <form className="flex items-center gap-2">
-        <Input name="mes" type="month" defaultValue={mes} className="w-48" />
+      <form className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-muted-foreground">Mes</label>
+          <Input name="mes" type="month" defaultValue={mes} className="w-48" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-muted-foreground">Vendedor</label>
+          <select
+            name="vendedor"
+            defaultValue={vendedor ?? ""}
+            className="h-9 w-48 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+          >
+            <option value="">Todos</option>
+            {vendedores.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
         <Button type="submit" variant="outline">
-          Filtrar por mes
+          Filtrar
         </Button>
       </form>
 
@@ -68,6 +98,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
             <TableHead>Propietario</TableHead>
             <TableHead>Comisión venta</TableHead>
             <TableHead>Comisión título</TableHead>
+            {puedeEditar && <TableHead className="text-right">Acciones</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -81,16 +112,26 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
               <TableCell>{v.fechaEntrega ? new Date(v.fechaEntrega).toLocaleDateString("es-UY") : "—"}</TableCell>
               <TableCell>{formatCents(v.precioVentaUsdCents, "USD")}</TableCell>
               <TableCell>{v.vendedor?.nombre ?? "—"}</TableCell>
-              <TableCell>{v.localVenta === "SAN_LUIS" ? "San Luis" : "Zonamérica"}</TableCell>
+              <TableCell>{localVentaLabel(v.localVenta)}</TableCell>
               <TableCell>{v.propietarioVehiculo ?? "—"}</TableCell>
               <TableCell>{formatCents(v.comisionVentaUsdCents, "USD")}</TableCell>
               <TableCell>{formatCents(v.comisionTituloUsdCents, "USD")}</TableCell>
+              {puedeEditar && (
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/ventas/${v.id}`}>
+                      <Pencil className="h-4 w-4" />
+                      Editar
+                    </Link>
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
           {ventas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
-                No hay ventas registradas {mes ? "en ese mes" : "todavía"}.
+              <TableCell colSpan={puedeEditar ? 11 : 10} className="py-8 text-center text-muted-foreground">
+                No hay ventas registradas {mes || vendedor ? "con ese filtro" : "todavía"}.
               </TableCell>
             </TableRow>
           )}

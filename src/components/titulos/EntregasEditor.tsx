@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { formatCents } from "@/lib/money";
 
 export type EntregaData = { id: string; numero: number; montoCents: number; fecha: Date | null };
@@ -39,13 +40,6 @@ export function EntregasEditor({
     });
   };
 
-  const handleDelete = (id: string) => {
-    startTransition(async () => {
-      await onDelete(id);
-      router.refresh();
-    });
-  };
-
   return (
     <div className="flex flex-col gap-3">
       <Table>
@@ -64,9 +58,11 @@ export function EntregasEditor({
               <TableCell>{e.fecha ? new Date(e.fecha).toLocaleDateString("es-UY") : "—"}</TableCell>
               <TableCell>{formatCents(e.montoCents, moneda)}</TableCell>
               <TableCell>
-                <Button variant="ghost" size="icon" disabled={pending} onClick={() => handleDelete(e.id)}>
-                  <Trash2 className="h-4 w-4 text-danger" />
-                </Button>
+                <ConfirmDeleteButton
+                  onConfirm={() => onDelete(e.id)}
+                  title="Eliminar entrega"
+                  description="¿Estás seguro que querés eliminar esta entrega? Esta acción no se puede deshacer."
+                />
               </TableCell>
             </TableRow>
           ))}

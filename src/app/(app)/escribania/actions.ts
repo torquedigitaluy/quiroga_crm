@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
+import { logAudit } from "@/lib/audit";
 import { escribaniaSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -13,9 +14,7 @@ function dateOrNull(value: FormDataEntryValue | null): Date | null {
   return str ? new Date(str) : null;
 }
 
-export async function createTramite(formData: FormData) {
-  await assertCan("escribania.edit");
-
+function parseTramite(formData: FormData) {
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
@@ -36,7 +35,31 @@ export async function createTramite(formData: FormData) {
   if (!parsed.success) {
     throw new Error(parsed.error.issues.map((i) => i.message).join(", "));
   }
-  const data = parsed.data;
+  return parsed.data;
+}
+
+/** Campos de la fila EscribaniaTramite tomados del formulario (sin el cliente). */
+function tramiteData(data: ReturnType<typeof parseTramite>, formData: FormData) {
+  return {
+    fecha: dateOrNull(formData.get("fecha")),
+    tipoDoc: data.tipoDoc,
+    titulosCon: data.titulosCon,
+    fechaFirma: dateOrNull(formData.get("fechaFirma")),
+    pagoEscribaniaCents: data.pagoEscribaniaCents,
+    pagoMoneda: data.pagoMoneda,
+    fechaPago: dateOrNull(formData.get("fechaPago")),
+    cobroAlCliente: data.cobroAlCliente,
+    cobroMontoCents: data.cobroMontoCents,
+    fechaCobro: dateOrNull(formData.get("fechaCobro")),
+    fechaEntregaTitulos: dateOrNull(formData.get("fechaEntregaTitulos")),
+    ubicacionTitulos: data.ubicacionTitulos,
+    comentarios: data.comentarios || null,
+  };
+}
+
+export async function createTramite(formData: FormData) {
+  await assertCan("escribania.edit");
+  const data = parseTramite(formData);
 
   const cliente = await findOrCreateCliente({
     nombre: data.clienteNombre,
@@ -49,19 +72,7 @@ export async function createTramite(formData: FormData) {
     data: {
       vehiculoId: data.vehiculoId,
       clienteId: cliente.id,
-      fecha: dateOrNull(formData.get("fecha")),
-      tipoDoc: data.tipoDoc,
-      titulosCon: data.titulosCon,
-      fechaFirma: dateOrNull(formData.get("fechaFirma")),
-      pagoEscribaniaCents: data.pagoEscribaniaCents,
-      pagoMoneda: data.pagoMoneda,
-      fechaPago: dateOrNull(formData.get("fechaPago")),
-      cobroAlCliente: data.cobroAlCliente,
-      cobroMontoCents: data.cobroMontoCents,
-      fechaCobro: dateOrNull(formData.get("fechaCobro")),
-      fechaEntregaTitulos: dateOrNull(formData.get("fechaEntregaTitulos")),
-      ubicacionTitulos: data.ubicacionTitulos,
-      comentarios: data.comentarios || null,
+      ...tramiteData(data, formData),
     },
   });
 
@@ -69,8 +80,41 @@ export async function createTramite(formData: FormData) {
   redirect("/escribania");
 }
 
+export async function updateTramite(id: string, formData: FormData) {
+  await assertCan("escribania.edit");
+  const data = parseTramite(formData);
+
+  const cliente = await findOrCreateCliente({
+    nombre: data.clienteNombre,
+    apellido: data.clienteApellido,
+    ci: data.clienteCi,
+    contacto: data.clienteContacto,
+  });
+
+  await db.escribaniaTramite.update({
+    where: { id },
+    data: {
+      clienteId: cliente.id,
+      ...tramiteData(data, formData),
+    },
+  });
+
+  revalidatePath("/escribania");
+  revalidatePath(`/escribania/${id}`);
+  redirect("/escribania");
+}
+
 export async function deleteTramite(id: string) {
   await assertCan("escribania.edit");
+  const tramite = await db.escribaniaTramite.findUnique({ where: { id }, include: { vehiculo: true } });
   await db.escribaniaTramite.delete({ where: { id } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Trámite de escribanía",
+    entidadId: id,
+    descripcion: tramite
+      ? `Eliminó el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`
+      : `Eliminó un trámite de escribanía (${id})`,
+  });
   revalidatePath("/escribania");
 }

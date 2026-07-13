@@ -29,6 +29,7 @@ export const vehiculoSchema = z.object({
   estado: estadoVehiculoEnum.optional(),
   propietario: z.string().trim().optional().nullable(),
   tipoPropiedad: tipoPropiedadEnum.optional(),
+  responsableId: z.string().trim().optional().nullable(),
 });
 
 export type VehiculoInput = z.infer<typeof vehiculoSchema>;

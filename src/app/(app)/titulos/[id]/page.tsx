@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan, getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
+import { costoTitulosEfectivoCents, recargoCartaDePagoCents } from "@/lib/titulos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntregasEditor } from "@/components/titulos/EntregasEditor";
 import { addEntrega, deleteEntrega } from "../actions";
@@ -12,18 +13,28 @@ export default async function FinanciacionTituloDetailPage({ params }: { params:
   await assertCan("titulos.view");
   const { id } = await params;
 
-  const financiacion = await db.financiacionTitulo.findUnique({
-    where: { id },
-    include: { vehiculo: true, cliente: true, entregas: { orderBy: { numero: "asc" } } },
-  });
+  const [financiacion, config] = await Promise.all([
+    db.financiacionTitulo.findUnique({
+      where: { id },
+      include: { vehiculo: true, cliente: true, entregas: { orderBy: { numero: "asc" } } },
+    }),
+    db.configuracion.findUnique({ where: { id: 1 } }),
+  ]);
   if (!financiacion) notFound();
+  const rateMicros = config?.tipoCambioGlobalMicros ?? 405_000;
 
   const user = await getCurrentUser();
   const perms = user ? await getEffectivePermissions(user.id) : new Set<string>();
   const editable = perms.has("titulos.edit");
 
+  const costoEfectivo = costoTitulosEfectivoCents(
+    financiacion.costoEscribaniaCents,
+    financiacion.cartaDePago,
+    financiacion.costoMoneda,
+    rateMicros,
+  );
   const pagadoCents = financiacion.entregas.reduce((sum, e) => sum + e.montoCents, 0);
-  const saldo = financiacion.costoEscribaniaCents - pagadoCents;
+  const saldo = costoEfectivo - pagadoCents;
 
   const boundAdd = addEntrega.bind(null, id);
   const boundDelete = deleteEntrega.bind(null, id);
@@ -50,13 +61,22 @@ export default async function FinanciacionTituloDetailPage({ params }: { params:
           <CardTitle>Resumen</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Stat label="Costo de títulos" value={formatCents(financiacion.costoEscribaniaCents, financiacion.costoMoneda)} />
+          <Stat
+            label="Costo de títulos"
+            value={formatCents(costoEfectivo, financiacion.costoMoneda)}
+            hint={
+              financiacion.cartaDePago
+                ? `Incluye ${formatCents(recargoCartaDePagoCents(financiacion.costoMoneda, rateMicros), financiacion.costoMoneda)} por carta de pago`
+                : undefined
+            }
+          />
           <Stat label="Pagado" value={formatCents(pagadoCents, financiacion.costoMoneda)} />
           <Stat
             label="Saldo pendiente"
             value={formatCents(saldo, financiacion.costoMoneda)}
             danger={saldo > 0}
           />
+          <Stat label="Forma de pago" value={financiacion.formaPago === "FINANCIADO" ? "Financiado" : "Contado"} />
         </CardContent>
       </Card>
 
@@ -72,11 +92,12 @@ export default async function FinanciacionTituloDetailPage({ params }: { params:
   );
 }
 
-function Stat({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
+function Stat({ label, value, danger, hint }: { label: string; value: string; danger?: boolean; hint?: string }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className={`text-lg font-semibold ${danger ? "text-danger" : "text-foreground"}`}>{value}</span>
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   );
 }

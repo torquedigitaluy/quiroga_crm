@@ -70,7 +70,6 @@ export default async function BBVAPage({ searchParams }: { searchParams: Promise
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>Cédula</TableHead>
-            <TableHead>Contacto</TableHead>
             <TableHead>Vehículo</TableHead>
             <TableHead>Monto solicitado</TableHead>
             <TableHead>Fecha de firma</TableHead>
@@ -82,7 +81,6 @@ export default async function BBVAPage({ searchParams }: { searchParams: Promise
             <TableRow key={c.id}>
               <TableCell className="font-medium text-foreground">{c.nombre}</TableCell>
               <TableCell>{c.ci ?? "—"}</TableCell>
-              <TableCell>{c.contacto ?? "—"}</TableCell>
               <TableCell>{c.vehiculo ? `${c.vehiculo.marca} ${c.vehiculo.modelo}` : "—"}</TableCell>
               <TableCell>{formatCents(c.montoSolicitadoUsdCents, "USD")}</TableCell>
               <TableCell>{c.fechaFirma ? new Date(c.fechaFirma).toLocaleDateString("es-UY") : "—"}</TableCell>
@@ -93,7 +91,7 @@ export default async function BBVAPage({ searchParams }: { searchParams: Promise
           ))}
           {creditos.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+              <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                 No hay créditos BBVA registrados {mes ? "en ese mes" : "todavía"}.
               </TableCell>
             </TableRow>

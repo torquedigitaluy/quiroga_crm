@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoleToggle } from "@/components/admin/RoleToggle";
+import { VendedorToggle } from "@/components/admin/VendedorToggle";
 import { PermissionOverrideSelect } from "@/components/admin/PermissionOverrideSelect";
 import { ResetPasswordForm } from "@/components/admin/ResetPasswordForm";
 import { resetPassword } from "../actions";
@@ -46,13 +47,19 @@ export default async function UsuarioDetailPage({ params }: { params: Promise<{ 
         <CardHeader>
           <CardTitle>Roles</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-6">
-          {roles.map((r) => (
-            <label key={r.id} className="flex items-center gap-2 text-sm">
-              <RoleToggle userId={usuario.id} roleId={r.id} assigned={assignedRoleIds.has(r.id)} />
-              {r.nombre}
-            </label>
-          ))}
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-6">
+            {roles.map((r) => (
+              <label key={r.id} className="flex items-center gap-2 text-sm">
+                <RoleToggle userId={usuario.id} roleId={r.id} assigned={assignedRoleIds.has(r.id)} />
+                {r.nombre}
+              </label>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 border-t border-border pt-4 text-sm">
+            <VendedorToggle userId={usuario.id} esVendedor={usuario.esVendedor} />
+            Es vendedor (aparece en el desplegable de ventas y en la planilla)
+          </label>
         </CardContent>
       </Card>
 

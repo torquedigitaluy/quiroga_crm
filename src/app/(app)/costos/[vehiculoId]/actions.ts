@@ -1,17 +1,36 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
 import { unitsToCents, rateToMicros } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
   const str = String(value ?? "").trim();
   return str ? new Date(str) : null;
 }
 
+/**
+ * Permite editar los costos si el usuario tiene el permiso global `costos.edit`
+ * o si es el responsable asignado de ese vehículo.
+ */
+async function assertPuedeEditarCostos(vehiculoId: string) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const perms = await getEffectivePermissions(user.id);
+  if (perms.has("costos.edit")) return user;
+  const vehiculo = await db.vehiculo.findUnique({
+    where: { id: vehiculoId },
+    select: { responsableId: true },
+  });
+  if (vehiculo?.responsableId === user.id) return user;
+  throw new Error("No autorizado: no sos responsable de este vehículo.");
+}
+
 export async function upsertCosteo(vehiculoId: string, formData: FormData) {
-  await assertCan("costos.edit");
+  await assertPuedeEditarCostos(vehiculoId);
 
   const tipoCambio = parseFloat(String(formData.get("tipoCambio") ?? "0")) || 0;
   const precioCompra = parseFloat(String(formData.get("precioCompraUsdCents") ?? "0")) || 0;
@@ -40,7 +59,7 @@ export async function upsertCosteo(vehiculoId: string, formData: FormData) {
 }
 
 export async function addGasto(vehiculoId: string, formData: FormData) {
-  await assertCan("costos.edit");
+  await assertPuedeEditarCostos(vehiculoId);
 
   const costeo = await db.vehiculoCosteo.upsert({
     where: { vehiculoId },
@@ -67,7 +86,14 @@ export async function addGasto(vehiculoId: string, formData: FormData) {
 }
 
 export async function deleteGasto(vehiculoId: string, gastoId: string) {
-  await assertCan("costos.edit");
+  await assertPuedeEditarCostos(vehiculoId);
+  const gasto = await db.gastoLine.findUnique({ where: { id: gastoId } });
   await db.gastoLine.delete({ where: { id: gastoId } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Gasto de vehículo",
+    entidadId: gastoId,
+    descripcion: gasto ? `Eliminó el gasto "${gasto.descripcion}"` : `Eliminó un gasto de costos (${gastoId})`,
+  });
   revalidatePath(`/costos/${vehiculoId}`);
 }

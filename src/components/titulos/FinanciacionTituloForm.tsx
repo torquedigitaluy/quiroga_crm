@@ -86,9 +86,26 @@ export function FinanciacionTituloForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2 pt-6">
-          <Checkbox name="cartaDePago" />
-          <Label>Carta de pago</Label>
+        <div className="flex flex-col gap-1.5">
+          <Label>Forma de pago</Label>
+          <Select name="formaPago" defaultValue="CONTADO">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CONTADO">Contado</SelectItem>
+              <SelectItem value="FINANCIADO">Financiado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1 pt-6 sm:col-span-2">
+          <div className="flex items-center gap-2">
+            <Checkbox name="cartaDePago" />
+            <Label>Carta de pago</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Si tiene carta de pago, se suman automáticamente $4.000 (pesos) al costo de los títulos.
+          </p>
         </div>
       </div>
 

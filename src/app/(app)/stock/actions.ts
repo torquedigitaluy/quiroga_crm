@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { assertCan, getEffectivePermissions, getCurrentUser } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 import { createVehiculoSchema, vehiculoSchema, type VehiculoInput } from "./schema";
 
 const VEHICLE_FIELDS = [
@@ -35,6 +36,7 @@ FIELD_PERMISSIONS.ubicacion = "stock.move_location";
 FIELD_PERMISSIONS.estado = "stock.edit_status";
 FIELD_PERMISSIONS.propietario = "stock.edit_owner";
 FIELD_PERMISSIONS.tipoPropiedad = "stock.edit_owner";
+FIELD_PERMISSIONS.responsableId = "stock.edit_owner";
 
 function formDataToRaw(formData: FormData): Record<string, unknown> {
   const raw: Record<string, unknown> = {};
@@ -63,6 +65,12 @@ export async function createVehiculo(formData: FormData) {
     throw new Error(parsed.error.issues.map((i) => i.message).join(", "));
   }
   const vehiculo = await db.vehiculo.create({ data: parsed.data });
+  await logAudit({
+    accion: "CREAR",
+    entidad: "Vehículo",
+    entidadId: vehiculo.id,
+    descripcion: `Creó el vehículo ${vehiculo.marca} ${vehiculo.modelo}${vehiculo.matricula ? ` (${vehiculo.matricula})` : ""}`,
+  });
   revalidatePath("/stock");
   redirect(vehiculo.esVehiculo ? `/stock/${vehiculo.id}` : "/stock?tab=accesorios");
 }
@@ -93,13 +101,28 @@ export async function updateVehiculo(id: string, formData: FormData) {
   }
 
   await db.vehiculo.update({ where: { id }, data: allowed });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Vehículo",
+    entidadId: id,
+    descripcion: `Editó campos: ${Object.keys(allowed).join(", ")}`,
+  });
   revalidatePath("/stock");
   revalidatePath(`/stock/${id}`);
 }
 
 export async function deleteVehiculo(id: string) {
   await assertCan("stock.delete");
+  const vehiculo = await db.vehiculo.findUnique({ where: { id } });
   await db.vehiculo.delete({ where: { id } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Vehículo",
+    entidadId: id,
+    descripcion: vehiculo
+      ? `Eliminó el vehículo ${vehiculo.marca} ${vehiculo.modelo}${vehiculo.matricula ? ` (${vehiculo.matricula})` : ""}`
+      : `Eliminó un vehículo (${id})`,
+  });
   revalidatePath("/stock");
   redirect("/stock");
 }

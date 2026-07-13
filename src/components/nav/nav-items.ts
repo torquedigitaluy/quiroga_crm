@@ -28,8 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/costos", label: "Costos de Vehículos", icon: "costos", permission: "costos.view" },
   { href: "/ventas", label: "Ventas", icon: "ventas", permission: "ventas.view_full" },
   { href: "/ventas/planilla", label: "Mi Planilla de Venta", icon: "ventas", permission: "ventas.view_own" },
-  { href: "/escribania", label: "Escribanía", icon: "escribania", permission: "escribania.view" },
-  { href: "/titulos", label: "Financiación de Títulos", icon: "titulos", permission: "titulos.view" },
+  { href: "/escribania", label: "Escribanía y Títulos", icon: "escribania", permission: "escribania.view" },
   { href: "/propia", label: "Financiación Propia", icon: "propia", permission: "propia.view" },
   { href: "/bbva", label: "Créditos BBVA", icon: "bbva", permission: "bbva.view" },
   { href: "/bancos", label: "Bancos", icon: "bancos", permission: "bancos.view" },
@@ -39,4 +38,5 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/taller", label: "Taller", icon: "taller", permission: "taller.view" },
   { href: "/clientes", label: "Clientes", icon: "clientes", permission: "clientes.view" },
   { href: "/admin/usuarios", label: "Administración", icon: "admin", permission: "admin.users" },
+  { href: "/admin/auditoria", label: "Historial de cambios", icon: "admin", permission: "audit.view" },
 ];

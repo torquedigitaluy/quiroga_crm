@@ -12,7 +12,11 @@ import { TransferenciaDialog } from "@/components/bancos/TransferenciaDialog";
 import { DeleteMovimientoButton } from "@/components/bancos/DeleteMovimientoButton";
 import { createMovimiento, createTransferencia } from "./actions";
 
-const BANCO_LABELS: Record<string, string> = { BBVA: "BBVA", SANTANDER: "Santander" };
+const BANCO_LABELS: Record<string, string> = {
+  BBVA: "BBVA",
+  SANTANDER: "Santander",
+  GASTOS_TALLER: "Gastos Taller",
+};
 
 export default async function BancosPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   await assertCan("bancos.view");
@@ -39,7 +43,7 @@ export default async function BancosPage({ searchParams }: { searchParams: Promi
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Bancos</h1>
-          <p className="text-sm text-muted-foreground">Movimientos y saldos de BBVA y Santander.</p>
+          <p className="text-sm text-muted-foreground">Movimientos y saldos de BBVA, Santander y Gastos Taller.</p>
         </div>
         {editable && (
           <TransferenciaDialog
