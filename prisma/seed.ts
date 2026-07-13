@@ -1,9 +1,14 @@
 import "dotenv/config";
+import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_DEFS, ROLE_PERMISSIONS, type RoleKey } from "../src/lib/permissions/catalog";
 
 const db = new PrismaClient();
+
+function randomPassword(): string {
+  return crypto.randomBytes(12).toString("base64url") + "!1";
+}
 
 async function main() {
   console.log("Seeding permission catalog…");
@@ -56,28 +61,16 @@ async function main() {
     esVendedor?: boolean;
   }[] = [
     {
-      email: (process.env.SEED_ADMIN_EMAIL ?? "admin@quiroga.local").toLowerCase(),
+      email: (process.env.SEED_ADMIN_EMAIL ?? "quirogaautomoviles@gmail.com").toLowerCase(),
       nombre: "Administrador",
-      password: process.env.SEED_ADMIN_PASSWORD ?? "Quiroga2026!",
+      password: process.env.SEED_ADMIN_PASSWORD ?? randomPassword(),
       role: "SUPERADMIN",
     },
-    { email: "vendedor@quiroga.local", nombre: "Patricio Piñeyro", password: "Vendedor2026!", role: "VENDEDOR", esVendedor: true },
-    { email: "matias@quiroga.local", nombre: "Matias Soria", password: "Matias2026!", role: "VENDEDOR", esVendedor: true },
-    { email: "georgina@quiroga.local", nombre: "Georgina", password: "Georgina2026!", role: "ADMINISTRACION", esVendedor: true },
-    { email: "jorge@quiroga.local", nombre: "Jorge", password: "Jorge2026!", role: "SUPERADMIN", esVendedor: true },
-    { email: "pepe@quiroga.local", nombre: "Pepe", password: "Pepe2026!", role: "ADMINISTRACION" },
-    // "Reventa" no es una persona: es una opción del desplegable de vendedores
-    // para ventas de reventa. No tiene rol (no inicia sesión de forma útil).
-    { email: "reventa@quiroga.local", nombre: "Reventa", password: `${Math.random().toString(36).slice(2)}Rv1!`, esVendedor: true },
-    { email: "contadora@quiroga.local", nombre: "Contadora", password: "Contadora2026!", role: "CONTADORA" },
-    { email: "escribania@quiroga.local", nombre: "Escribanía", password: "Escribania2026!", role: "ESCRIBANIA" },
-    {
-      email: "administracion@quiroga.local",
-      nombre: "Administración",
-      password: "Administracion2026!",
-      role: "ADMINISTRACION",
-    },
-    { email: "marcial@quiroga.local", nombre: "Marcial Hidalgo", password: "Taller2026!", role: "TALLER" },
+    { email: "quirogajorge095@gmail.com", nombre: "Jorge", password: randomPassword(), role: "SUPERADMIN", esVendedor: true },
+    { email: "pepe@quiroga.local", nombre: "Pepe", password: randomPassword(), role: "COSTOS_VEHICULOS" },
+    { email: "taller@quiroga.local", nombre: "Taller", password: randomPassword(), role: "TALLER" },
+    { email: "3697motors.sanluis@gmail.com", nombre: "Ventas San Luis", password: randomPassword(), role: "VENDEDOR", esVendedor: true },
+    { email: "ventaszonamerica@gmail.com", nombre: "Ventas Zonamérica", password: randomPassword(), role: "VENDEDOR", esVendedor: true },
   ];
 
   for (const su of seedUsers) {
@@ -329,7 +322,7 @@ async function main() {
   }
 
   console.log("Seeding venta de ejemplo…");
-  const vendedorUser = await db.user.findUnique({ where: { email: "vendedor@quiroga.local" } });
+  const vendedorUser = await db.user.findUnique({ where: { email: "3697motors.sanluis@gmail.com" } });
   const tiggoId = createdVehiculos["FRF 7564"];
   let clienteVentaDemo = await db.cliente.findFirst({ where: { ci: "1234567-8" } });
   if (!clienteVentaDemo) {

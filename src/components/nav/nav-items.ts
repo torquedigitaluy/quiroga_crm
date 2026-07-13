@@ -26,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Resumen", icon: "dashboard", permission: "dashboard.view" },
   { href: "/stock", label: "Stock", icon: "stock", permission: "stock.view" },
   { href: "/costos", label: "Costos de Vehículos", icon: "costos", permission: "costos.view" },
+  { href: "/mis-vehiculos", label: "Mis Vehículos", icon: "costos", permission: "costos.view_own" },
   { href: "/ventas", label: "Ventas", icon: "ventas", permission: "ventas.view_full" },
   { href: "/ventas/planilla", label: "Mi Planilla de Venta", icon: "ventas", permission: "ventas.view_own" },
   { href: "/escribania", label: "Escribanía y Títulos", icon: "escribania", permission: "escribania.view" },

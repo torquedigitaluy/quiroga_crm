@@ -24,6 +24,8 @@ export default async function DashboardPage() {
   const puedeVerFinanzasDeLaEmpresa =
     perms.has("costos.view") || perms.has("bancos.view") || perms.has("ventas.view_full");
   const esSoloTaller = !puedeVerFinanzasDeLaEmpresa && !perms.has("ventas.view_own") && perms.has("taller.view");
+  const esSoloCostosPropios =
+    !puedeVerFinanzasDeLaEmpresa && !esSoloTaller && !perms.has("ventas.view_own") && perms.has("costos.view_own");
 
   const vehiculos = await db.vehiculo.groupBy({ by: ["estado"], where: { esVehiculo: true }, _count: true });
   const stockPorEstado = { APRONTANDO: 0, SENADO: 0, PUBLICADO: 0, VENDIDO: 0 } as Record<string, number>;
@@ -52,7 +54,9 @@ export default async function DashboardPage() {
             ? "Resumen general de Quiroga Automóviles."
             : esSoloTaller
               ? "Resumen de taller."
-              : "Tu resumen de ventas."}
+              : esSoloCostosPropios
+                ? "Tus vehículos asignados."
+                : "Tu resumen de ventas."}
         </p>
       </div>
 
@@ -83,6 +87,8 @@ export default async function DashboardPage() {
         <DashboardEmpresa />
       ) : esSoloTaller ? (
         <DashboardTaller />
+      ) : esSoloCostosPropios ? (
+        <DashboardCostosPropios responsableId={user.id} />
       ) : (
         <DashboardVendedor vendedorId={user.id} />
       )}
@@ -251,6 +257,31 @@ async function DashboardTaller() {
         Cargá gastos y órdenes de trabajo desde{" "}
         <Link href="/taller" className="text-brand hover:underline">
           Taller
+        </Link>
+        .
+      </p>
+    </>
+  );
+}
+
+async function DashboardCostosPropios({ responsableId }: { responsableId: string }) {
+  const vehiculos = await db.vehiculo.findMany({
+    where: { responsableId, esVehiculo: true },
+    include: { costeo: true },
+  });
+
+  const conCosteoCargado = vehiculos.filter((v) => v.costeo && v.costeo.precioCompraUsdCents > 0).length;
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <StatCard label="Mis vehículos asignados" value={vehiculos.length.toString()} />
+        <StatCard label="Con costeo cargado" value={conCosteoCargado.toString()} />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Cargá los costos de tus vehículos desde{" "}
+        <Link href="/mis-vehiculos" className="text-brand hover:underline">
+          Mis Vehículos
         </Link>
         .
       </p>

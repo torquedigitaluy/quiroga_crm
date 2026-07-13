@@ -24,6 +24,7 @@ export const PERMISSIONS: PermissionDef[] = [
   // Costos
   { key: "costos.view", label: "Ver costos de vehículos", grupo: "Costos" },
   { key: "costos.edit", label: "Editar costos de vehículos", grupo: "Costos" },
+  { key: "costos.view_own", label: "Ver y editar solo los vehículos donde es responsable", grupo: "Costos" },
 
   // Ventas
   { key: "ventas.view_full", label: "Ver todas las ventas", grupo: "Ventas" },
@@ -90,6 +91,7 @@ export const ROLE_DEFS = {
   ESCRIBANIA: { nombre: "Escribanía", descripcion: "Trámites de escribanía y títulos" },
   ADMINISTRACION: { nombre: "Administración", descripcion: "Acceso amplio de back-office" },
   TALLER: { nombre: "Taller", descripcion: "Gastos de taller y órdenes de trabajo, sin acceso a costos ni ganancias" },
+  COSTOS_VEHICULOS: { nombre: "Costos de Vehículos", descripcion: "Solo ve y edita los vehículos donde figura como responsable" },
 } as const;
 
 export type RoleKey = keyof typeof ROLE_DEFS;
@@ -155,5 +157,9 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.view",
     "taller.view",
     "taller.edit",
+  ],
+  COSTOS_VEHICULOS: [
+    "dashboard.view",
+    "costos.view_own",
   ],
 };
