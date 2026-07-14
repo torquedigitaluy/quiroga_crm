@@ -27,4 +27,5 @@ export const conformeSchema = z.object({
   firmante1Ci: z.string().trim().optional(),
   firmante2Nombre: z.string().trim().optional(),
   firmante2Ci: z.string().trim().optional(),
+  formaPago: z.enum(["CONTADO", "TRANSFERENCIA"]).default("CONTADO"),
 });

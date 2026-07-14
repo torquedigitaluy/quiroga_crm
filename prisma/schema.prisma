@@ -150,6 +150,11 @@ enum EstadoOrdenTaller {
   ENTREGADA
 }
 
+enum FormaPagoRecibo {
+  CONTADO
+  TRANSFERENCIA
+}
+
 // ---------- Auth & Permissions ----------
 
 model User {
@@ -515,6 +520,8 @@ model Conforme {
   montoCuotaCents      Int
   fechaVencimiento     DateTime
   cantidadCuotas       Int
+  fechaPago            DateTime           @default(now())
+  formaPago            FormaPagoRecibo    @default(CONTADO)
   createdAt            DateTime           @default(now())
 
   firmantes ConformeFirmante[]

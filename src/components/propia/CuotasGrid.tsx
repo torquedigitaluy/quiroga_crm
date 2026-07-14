@@ -50,7 +50,7 @@ export function CuotasGrid({
           <TableHead>Monto</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Pagada</TableHead>
-          {canGenerateConforme && <TableHead>Conforme</TableHead>}
+          {canGenerateConforme && <TableHead>Recibo</TableHead>}
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>

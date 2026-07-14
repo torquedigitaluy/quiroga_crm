@@ -132,6 +132,7 @@ export async function generateConforme(financiacionPropiaId: string, cuotaId: st
     firmante1Ci: String(formData.get("firmante1Ci") ?? ""),
     firmante2Nombre: String(formData.get("firmante2Nombre") ?? ""),
     firmante2Ci: String(formData.get("firmante2Ci") ?? ""),
+    formaPago: String(formData.get("formaPago") ?? "CONTADO"),
   };
   const parsed = conformeSchema.safeParse(raw);
   if (!parsed.success) {
@@ -151,6 +152,8 @@ export async function generateConforme(financiacionPropiaId: string, cuotaId: st
       montoCuotaCents: cuota.montoCents,
       fechaVencimiento: cuota.fechaVencimiento,
       cantidadCuotas: financiacion.cantidadCuotas,
+      fechaPago: new Date(),
+      formaPago: data.formaPago,
       firmantes: {
         create: [
           { nombre: data.firmante1Nombre, ci: data.firmante1Ci || null, orden: 1 },

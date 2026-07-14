@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function ConformeForm({
   defaultFirmante,
@@ -21,7 +22,7 @@ export function ConformeForm({
       try {
         await action(formData);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error al generar el conforme");
+        setError(e instanceof Error ? e.message : "Error al generar el recibo");
       }
     });
   };
@@ -45,13 +46,25 @@ export function ConformeForm({
           <Label>Firmante 2 — Cédula</Label>
           <Input name="firmante2Ci" />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Forma de pago</Label>
+          <Select name="formaPago" defaultValue="CONTADO">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CONTADO">Contado</SelectItem>
+              <SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
-          {pending ? "Generando…" : "Generar conforme"}
+          {pending ? "Generando…" : "Generar recibo"}
         </Button>
       </div>
     </form>

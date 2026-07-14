@@ -64,13 +64,14 @@ export default async function DocumentosPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Conformes generados</h2>
+        <h2 className="text-lg font-semibold text-foreground">Recibos de pago generados</h2>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Plan</TableHead>
               <TableHead>Cuota</TableHead>
               <TableHead>Vencimiento</TableHead>
+              <TableHead>Fecha de Pago</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -80,6 +81,7 @@ export default async function DocumentosPage() {
                 <TableCell className="font-medium text-foreground">{c.financiacionPropia.nombre}</TableCell>
                 <TableCell>{c.cuota ? `# ${c.cuota.numero}` : "—"}</TableCell>
                 <TableCell>{new Date(c.fechaVencimiento).toLocaleDateString("es-UY")}</TableCell>
+                <TableCell>{new Date(c.fechaPago).toLocaleDateString("es-UY")}</TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" asChild>
                     <a href={`/api/documentos/conforme/${c.id}`} target="_blank" rel="noopener noreferrer">
@@ -92,8 +94,8 @@ export default async function DocumentosPage() {
             ))}
             {conformes.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                  No hay conformes generados todavía. Se generan desde Financiación Propia → Cuotas.
+                <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                  No hay recibos de pago generados todavía. Se generan desde Financiación Propia → Cuotas.
                 </TableCell>
               </TableRow>
             )}

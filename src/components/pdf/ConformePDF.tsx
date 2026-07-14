@@ -5,33 +5,33 @@ import { formatCents } from "@/lib/money";
 
 export type ConformePdfData = {
   montoCuotaCents: number;
-  fechaVencimiento: Date;
+  fechaPago: Date;
+  formaPago: string;
   cantidadCuotas: number;
-  diaVencimientoMensual: number;
   vehiculoLabel: string;
   numeroCuota: number | null;
+  cuotasRestantes: number | null;
   firmantes: { nombre: string; ci: string | null }[];
 };
+
+const FORMA_PAGO_LABELS: Record<string, string> = { CONTADO: "Contado", TRANSFERENCIA: "Transferencia" };
 
 export function ConformePDF({ data }: { data: ConformePdfData }) {
   return (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
-        <PdfHeader title="Conforme de Pago" />
+        <PdfHeader title="Recibo de Pago" />
 
         <Text style={pdfStyles.paragraph}>
-          Por el presente documento me/nos obligo/obligamos a pagar a Quiroga Automóviles la suma de{" "}
-          <Text style={{ fontWeight: 700 }}>{formatCents(data.montoCuotaCents, "USD")}</Text>
-          {data.numeroCuota ? ` correspondiente a la cuota N° ${data.numeroCuota}` : ""}, con vencimiento el día{" "}
-          <Text style={{ fontWeight: 700 }}>{data.diaVencimientoMensual}</Text> de cada mes (
-          <Text style={{ fontWeight: 700 }}>{new Date(data.fechaVencimiento).toLocaleDateString("es-UY")}</Text>
-          ), hasta completar un total de <Text style={{ fontWeight: 700 }}>{data.cantidadCuotas}</Text> cuotas, en
-          concepto de la financiación del vehículo <Text style={{ fontWeight: 700 }}>{data.vehiculoLabel}</Text>.
-        </Text>
-
-        <Text style={pdfStyles.paragraph}>
-          El incumplimiento en el pago de dos o más cuotas consecutivas dará derecho a Quiroga Automóviles a exigir
-          el pago del saldo total adeudado.
+          Se recibe el pago correspondiente a la cuota{" "}
+          {data.numeroCuota ? <Text style={{ fontWeight: 700 }}>N° {data.numeroCuota} </Text> : ""}
+          de un total de <Text style={{ fontWeight: 700 }}>{data.cantidadCuotas}</Text> cuotas pactadas, por la suma
+          de <Text style={{ fontWeight: 700 }}>{formatCents(data.montoCuotaCents, "USD")}</Text>. Luego del presente
+          pago restan <Text style={{ fontWeight: 700 }}>{data.cuotasRestantes ?? "—"}</Text> cuotas pendientes. El
+          pago fue realizado el día{" "}
+          <Text style={{ fontWeight: 700 }}>{new Date(data.fechaPago).toLocaleDateString("es-UY")}</Text> mediante{" "}
+          <Text style={{ fontWeight: 700 }}>{FORMA_PAGO_LABELS[data.formaPago] ?? data.formaPago}</Text>, en concepto
+          de la financiación del vehículo <Text style={{ fontWeight: 700 }}>{data.vehiculoLabel}</Text>.
         </Text>
 
         <View style={pdfStyles.signaturesRow}>

@@ -20,9 +20,9 @@ export default async function GenerarConformePage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Generar conforme</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Generar recibo de pago</h1>
         <p className="text-sm text-muted-foreground">
-          Plan de {financiacion.nombre} — cuota a firmar por el/los firmante(s).
+          Plan de {financiacion.nombre} — recibo a firmar por el/los firmante(s).
         </p>
       </div>
       <ConformeForm defaultFirmante={financiacion.nombre} action={boundAction} />

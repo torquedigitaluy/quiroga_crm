@@ -4,6 +4,8 @@ import { assertCan } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+const FORMA_PAGO_LABELS: Record<string, string> = { CONTADO: "Contado", TRANSFERENCIA: "Transferencia" };
+
 export default async function ConformeViewPage({ params }: { params: Promise<{ conformeId: string }> }) {
   await assertCan("conforme.generate");
   const { conformeId } = await params;
@@ -12,15 +14,19 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
     where: { id: conformeId },
     include: {
       firmantes: { orderBy: { orden: "asc" } },
+      cuota: true,
       financiacionPropia: { include: { cliente: true, vehiculo: true } },
     },
   });
   if (!conforme) notFound();
 
+  const numeroCuota = conforme.cuota?.numero ?? null;
+  const cuotasRestantes = numeroCuota !== null ? Math.max(conforme.cantidadCuotas - numeroCuota, 0) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Conforme generado</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Recibo de pago generado</h1>
         <p className="text-sm text-muted-foreground">
           La versión imprimible en PDF está disponible desde el módulo Documentos.
         </p>
@@ -32,11 +38,19 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           <p>
-            Por el presente documento me obligo a pagar la suma de{" "}
-            <strong>{formatCents(conforme.montoCuotaCents, "USD")}</strong> el día{" "}
-            <strong>{conforme.financiacionPropia.diaVencimientoMensual}</strong> de cada mes, con vencimiento el{" "}
-            <strong>{new Date(conforme.fechaVencimiento).toLocaleDateString("es-UY")}</strong>, hasta completar{" "}
-            <strong>{conforme.cantidadCuotas}</strong> cuotas, en concepto de financiación del vehículo{" "}
+            Se recibe el pago correspondiente a la cuota{" "}
+            {numeroCuota !== null ? (
+              <>
+                N° <strong>{numeroCuota}</strong>
+              </>
+            ) : (
+              ""
+            )}{" "}
+            de un total de <strong>{conforme.cantidadCuotas}</strong> cuotas pactadas, por la suma de{" "}
+            <strong>{formatCents(conforme.montoCuotaCents, "USD")}</strong>. Luego del presente pago restan{" "}
+            <strong>{cuotasRestantes ?? "—"}</strong> cuotas pendientes. El pago fue realizado el día{" "}
+            <strong>{new Date(conforme.fechaPago).toLocaleDateString("es-UY")}</strong> mediante{" "}
+            <strong>{FORMA_PAGO_LABELS[conforme.formaPago]}</strong>, en concepto de financiación del vehículo{" "}
             {conforme.financiacionPropia.vehiculo
               ? `${conforme.financiacionPropia.vehiculo.marca} ${conforme.financiacionPropia.vehiculo.modelo}`
               : "—"}

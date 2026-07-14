@@ -17,20 +17,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
 
   if (!conforme) {
-    return new Response("Conforme no encontrado", { status: 404 });
+    return new Response("Recibo no encontrado", { status: 404 });
   }
+
+  const numeroCuota = conforme.cuota?.numero ?? null;
+  const cuotasRestantes = numeroCuota !== null ? Math.max(conforme.cantidadCuotas - numeroCuota, 0) : null;
 
   const buffer = await renderToBuffer(
     <ConformePDF
       data={{
         montoCuotaCents: conforme.montoCuotaCents,
-        fechaVencimiento: conforme.fechaVencimiento,
+        fechaPago: conforme.fechaPago,
+        formaPago: conforme.formaPago,
         cantidadCuotas: conforme.cantidadCuotas,
-        diaVencimientoMensual: conforme.financiacionPropia.diaVencimientoMensual,
         vehiculoLabel: conforme.financiacionPropia.vehiculo
           ? `${conforme.financiacionPropia.vehiculo.marca} ${conforme.financiacionPropia.vehiculo.modelo}`
           : conforme.financiacionPropia.nombre,
-        numeroCuota: conforme.cuota?.numero ?? null,
+        numeroCuota,
+        cuotasRestantes,
         firmantes: conforme.firmantes.map((f) => ({ nombre: f.nombre, ci: f.ci })),
       }}
     />,
@@ -39,7 +43,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="conforme-${id}.pdf"`,
+      "Content-Disposition": `inline; filename="recibo-pago-${id}.pdf"`,
     },
   });
 }

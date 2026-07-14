@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "FormaPagoRecibo" AS ENUM ('CONTADO', 'TRANSFERENCIA');
+
+-- AlterTable
+ALTER TABLE "Conforme" ADD COLUMN     "fechaPago" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "formaPago" "FormaPagoRecibo" NOT NULL DEFAULT 'CONTADO';
