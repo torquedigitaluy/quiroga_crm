@@ -34,8 +34,6 @@ export async function upsertCosteo(vehiculoId: string, formData: FormData) {
 
   const tipoCambio = parseFloat(String(formData.get("tipoCambio") ?? "0")) || 0;
   const precioCompra = parseFloat(String(formData.get("precioCompraUsdCents") ?? "0")) || 0;
-  const valorPatente = parseFloat(String(formData.get("valorPatenteUsdCents") ?? "0")) || 0;
-  const cantCuotas = parseInt(String(formData.get("cantCuotasPatentePagas") ?? "0"), 10) || 0;
   const precioVentaReal = parseFloat(String(formData.get("precioVentaRealUsdCents") ?? "0")) || 0;
 
   const data = {
@@ -44,8 +42,6 @@ export async function upsertCosteo(vehiculoId: string, formData: FormData) {
     fechaPublicacion: dateOrNull(formData.get("fechaPublicacion")),
     fechaVenta: dateOrNull(formData.get("fechaVenta")),
     precioCompraUsdCents: unitsToCents(precioCompra),
-    valorPatenteUsdCents: unitsToCents(valorPatente),
-    cantCuotasPatentePagas: cantCuotas,
     precioVentaRealUsdCents: unitsToCents(precioVentaReal),
   };
 

@@ -6,6 +6,7 @@ import { getEffectivePermissions, requireUser } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { CosteoForm } from "@/components/costos/CosteoForm";
 import { CosteoSummary } from "@/components/costos/CosteoSummary";
+import { PatenteCard } from "@/components/costos/PatenteCard";
 import { GastoLineTable } from "@/components/costos/GastoLineTable";
 import { computeCosteo } from "@/lib/costeo";
 import { upsertCosteo, addGasto, deleteGasto } from "./actions";
@@ -67,6 +68,12 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
         precioVentaIdealUsdCents={computed.precioVentaIdealUsdCents}
         precioVentaRealUsdCents={costeo.precioVentaRealUsdCents}
         gananciaFinalUsdCents={computed.gananciaFinalUsdCents}
+      />
+
+      <PatenteCard
+        patenteAnualCents={vehiculo.patenteAnualCents}
+        patenteCuotaCents={vehiculo.patenteCuotaCents}
+        fechaVenta={costeo.fechaVenta}
       />
 
       <div>

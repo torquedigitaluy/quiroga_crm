@@ -13,8 +13,6 @@ export type CosteoFormData = {
   fechaPublicacion: Date | null;
   fechaVenta: Date | null;
   precioCompraUsdCents: number;
-  valorPatenteUsdCents: number;
-  cantCuotasPatentePagas: number;
   precioVentaRealUsdCents: number;
 };
 
@@ -82,23 +80,6 @@ export function CosteoForm({
             type="number"
             step="0.01"
             defaultValue={centsToUnits(initial.precioCompraUsdCents)}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label>Valor de patente (USD)</Label>
-          <Input
-            name="valorPatenteUsdCents"
-            type="number"
-            step="0.01"
-            defaultValue={centsToUnits(initial.valorPatenteUsdCents)}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label>Cuotas de patente pagas</Label>
-          <Input
-            name="cantCuotasPatentePagas"
-            type="number"
-            defaultValue={initial.cantCuotasPatentePagas}
           />
         </div>
         <div className="flex flex-col gap-1.5">
