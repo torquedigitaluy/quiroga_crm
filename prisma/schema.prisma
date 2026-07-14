@@ -169,9 +169,45 @@ model User {
 
   roles                UserRole[]
   permissions          UserPermission[]
-  ventas               Venta[]           @relation("VendedorVentas")
-  ventasAccesorio      VentaAccesorio[]  @relation("VendedorVentasAccesorio")
-  vehiculosResponsable Vehiculo[]        @relation("VehiculoResponsable")
+  ventas               Venta[]              @relation("VendedorVentas")
+  ventasAccesorio      VentaAccesorio[]     @relation("VendedorVentasAccesorio")
+  vehiculosResponsable Vehiculo[]           @relation("VehiculoResponsable")
+  passwordResetTokens  PasswordResetToken[]
+  loginVerifications   LoginVerification[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Verificación en dos pasos por email: primero se valida usuario/contraseña
+// (fuera del provider de NextAuth) y se manda un código de 6 dígitos: recién
+// al confirmarlo se emite un "ticket" de un solo uso, de vida muy corta, que
+// es lo único que el provider Credentials acepta para emitir la sesión real.
+// Así un POST directo a la API de NextAuth con solo email+password nunca
+// alcanza para loguearse sin pasar por el código.
+model LoginVerification {
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash           String
+  codeExpiresAt      DateTime
+  codeUsedAt         DateTime?
+  otpTicketHash      String?
+  otpTicketExpiresAt DateTime?
+  otpTicketUsedAt    DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([userId])
+  @@index([otpTicketHash])
 }
 
 model Role {

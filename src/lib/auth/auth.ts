@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { consumeLoginTicket } from "@/lib/loginVerification";
 
 const DOCE_HORAS_MS = 12 * 60 * 60 * 1000;
 const VEINTICUATRO_HORAS_MS = 24 * 60 * 60 * 1000;
@@ -23,18 +23,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Contraseña", type: "password" },
+        otpTicket: { label: "otpTicket", type: "text" },
       },
+      // Nunca acepta una contraseña cruda: la contraseña se valida aparte, en
+      // el server action que manda el código por email (ver login/actions.ts).
+      // Este provider solo emite sesión si recibe un ticket de un solo uso ya
+      // consumido tras verificar ese código — así un POST directo a la API de
+      // NextAuth con email+password nunca alcanza para loguearse.
       authorize: async (credentials) => {
         const email = credentials?.email as string | undefined;
-        const password = credentials?.password as string | undefined;
-        if (!email || !password) return null;
+        const otpTicket = credentials?.otpTicket as string | undefined;
+        if (!email || !otpTicket) return null;
 
-        const user = await db.user.findUnique({ where: { email: email.toLowerCase() } });
-        if (!user || !user.activo) return null;
+        const consumed = await consumeLoginTicket(otpTicket);
+        if (!consumed) return null;
 
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        const user = await db.user.findUnique({ where: { id: consumed.userId } });
+        if (!user || !user.activo || user.email.toLowerCase() !== email.toLowerCase()) return null;
 
         return { id: user.id, name: user.nombre, email: user.email };
       },

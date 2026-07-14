@@ -23,8 +23,11 @@ export function LoginForm() {
       </div>
       {state.error && <p className="text-sm text-danger">{state.error}</p>}
       <Button type="submit" size="lg" disabled={pending} className="mt-2">
-        {pending ? "Ingresando…" : "Ingresar"}
+        {pending ? "Enviando código…" : "Continuar"}
       </Button>
+      <a href="/forgot-password" className="text-center text-sm text-muted-foreground hover:text-brand hover:underline">
+        ¿Olvidaste tu contraseña?
+      </a>
     </form>
   );
 }
