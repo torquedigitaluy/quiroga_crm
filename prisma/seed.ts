@@ -541,9 +541,12 @@ async function main() {
         data: {
           vehiculoId: fiorinoId,
           fechaIngreso: new Date("2026-07-01"),
-          trabajos: "Cambio de embrague, revisión de frenos delanteros",
-          repuestos: "Kit de embrague, pastillas de freno",
-          responsable: "Marcial Hidalgo",
+          problema: "Cambio de embrague, revisión de frenos delanteros",
+          responsable: "Marcial",
+          checklist: { create: [{ tarea: "Mecánica", orden: 0 }, { tarea: "Entrega", orden: 1 }] },
+          repuestos: {
+            create: [{ descripcion: "Kit de embrague, pastillas de freno", cantidad: 1, moneda: "UYU", precioUnitCents: 0 }],
+          },
         },
       });
     }

@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Plus, FileDown } from "lucide-react";
+import { FileDown } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
@@ -8,14 +7,13 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 export default async function DocumentosPage() {
   await assertCan("docs.generate");
 
-  const [ventas, conformes, ordenes] = await Promise.all([
+  const [ventas, conformes] = await Promise.all([
     db.venta.findMany({ include: { vehiculo: true, cliente: true }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.conforme.findMany({
       include: { financiacionPropia: true, cuota: true },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
-    db.ordenTaller.findMany({ include: { vehiculo: true }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
 
   return (
@@ -96,54 +94,6 @@ export default async function DocumentosPage() {
               <TableRow>
                 <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
                   No hay conformes generados todavía. Se generan desde Financiación Propia → Cuotas.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Órdenes de Trabajo — Taller</h2>
-          <Button asChild>
-            <Link href="/documentos/orden-taller/nueva">
-              <Plus className="h-4 w-4" />
-              Nueva orden
-            </Link>
-          </Button>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vehículo</TableHead>
-              <TableHead>Fecha de ingreso</TableHead>
-              <TableHead>Responsable</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ordenes.map((o) => (
-              <TableRow key={o.id}>
-                <TableCell className="font-medium text-foreground">
-                  {o.vehiculo.marca} {o.vehiculo.modelo}
-                </TableCell>
-                <TableCell>{new Date(o.fechaIngreso).toLocaleDateString("es-UY")}</TableCell>
-                <TableCell>{o.responsable ?? "—"}</TableCell>
-                <TableCell>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`/api/documentos/orden-taller/${o.id}`} target="_blank" rel="noopener noreferrer">
-                      <FileDown className="h-3.5 w-3.5" />
-                      PDF
-                    </a>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {ordenes.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                  No hay órdenes de taller registradas.
                 </TableCell>
               </TableRow>
             )}

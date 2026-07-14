@@ -134,6 +134,22 @@ enum TipoDocumento {
   ORDEN_TALLER
 }
 
+enum TipoServicioTaller {
+  MANTENIMIENTO
+  DIAGNOSTICO
+  REPARACION
+  OTRO
+}
+
+enum EstadoOrdenTaller {
+  PENDIENTE
+  EN_PROCESO
+  ESPERANDO_REPUESTOS
+  ESPERANDO_APROBACION
+  FINALIZADA
+  ENTREGADA
+}
+
 // ---------- Auth & Permissions ----------
 
 model User {
@@ -580,14 +596,67 @@ model DocumentoTemplate {
 }
 
 model OrdenTaller {
-  id             String    @id @default(cuid())
-  vehiculoId     String
-  vehiculo       Vehiculo  @relation(fields: [vehiculoId], references: [id])
-  fechaIngreso   DateTime
-  trabajos       String
-  repuestos      String?
-  responsable    String?
-  createdAt      DateTime  @default(now())
+  id                 String             @id @default(cuid())
+  vehiculoId         String?
+  vehiculo           Vehiculo?          @relation(fields: [vehiculoId], references: [id])
+  vehiculoExterno    String?
+  tipoServicio       TipoServicioTaller @default(MANTENIMIENTO)
+  fechaIngreso       DateTime
+  fechaFinalizacion  DateTime?
+  problema           String
+  trabajosRealizados String?
+  observaciones      String?
+  manoDeObraCents    Int                @default(0)
+  responsable        String?
+  estado             EstadoOrdenTaller  @default(PENDIENTE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  repuestos OrdenTallerRepuesto[]
+  gastos    OrdenTallerGasto[]
+  checklist OrdenTallerChecklistItem[]
+  imagenes  OrdenTallerImagen[]
+
+  @@index([estado])
+}
+
+model OrdenTallerRepuesto {
+  id              String      @id @default(cuid())
+  ordenTallerId   String
+  ordenTaller     OrdenTaller @relation(fields: [ordenTallerId], references: [id], onDelete: Cascade)
+  codigo          String?
+  descripcion     String
+  cantidad        Int         @default(1)
+  precioUnitCents Int         @default(0)
+  moneda          Moneda      @default(UYU)
+  createdAt       DateTime    @default(now())
+}
+
+model OrdenTallerGasto {
+  id            String      @id @default(cuid())
+  ordenTallerId String
+  ordenTaller   OrdenTaller @relation(fields: [ordenTallerId], references: [id], onDelete: Cascade)
+  descripcion   String
+  montoCents    Int
+  moneda        Moneda      @default(UYU)
+  createdAt     DateTime    @default(now())
+}
+
+model OrdenTallerChecklistItem {
+  id            String      @id @default(cuid())
+  ordenTallerId String
+  ordenTaller   OrdenTaller @relation(fields: [ordenTallerId], references: [id], onDelete: Cascade)
+  tarea         String
+  hecho         Boolean     @default(false)
+  orden         Int         @default(0)
+}
+
+model OrdenTallerImagen {
+  id            String      @id @default(cuid())
+  ordenTallerId String
+  ordenTaller   OrdenTaller @relation(fields: [ordenTallerId], references: [id], onDelete: Cascade)
+  dataUrl       String
+  createdAt     DateTime    @default(now())
 }
 
 // ---------- Auditoría ----------

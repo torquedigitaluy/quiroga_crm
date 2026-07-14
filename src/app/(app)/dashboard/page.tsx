@@ -377,15 +377,15 @@ function TallerDetalle({ vehiculos }: { vehiculos: TallerVehiculo[] }) {
             {orden ? (
               <div className="mt-2 text-sm">
                 <p className="text-foreground">
-                  <span className="text-muted-foreground">Trabajos: </span>
-                  {orden.trabajos}
+                  <span className="text-muted-foreground">Problema: </span>
+                  {orden.problema}
                 </p>
-                {orden.repuestos && (
-                  <p className="text-muted-foreground">Repuestos: {orden.repuestos}</p>
-                )}
                 {orden.responsable && (
                   <p className="text-muted-foreground">Responsable: {orden.responsable}</p>
                 )}
+                <Link href={`/taller/ordenes/${orden.id}`} className="text-brand hover:underline">
+                  Ver orden completa
+                </Link>
               </div>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">Sin orden de taller cargada todavía.</p>

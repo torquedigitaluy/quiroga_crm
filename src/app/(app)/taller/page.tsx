@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { GastoTallerForm } from "@/components/taller/GastoTallerForm";
+import { OrdenEstadoBadge } from "@/components/taller/OrdenEstadoBadge";
 import { createGastoTaller } from "./actions";
 
 export default async function TallerPage() {
@@ -51,8 +52,9 @@ export default async function TallerPage() {
           <TableRow>
             <TableHead>Vehículo</TableHead>
             <TableHead>Fecha de ingreso</TableHead>
-            <TableHead>Trabajos</TableHead>
+            <TableHead>Problema</TableHead>
             <TableHead>Responsable</TableHead>
+            <TableHead>Estado</TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
@@ -60,11 +62,16 @@ export default async function TallerPage() {
           {ordenes.map((o) => (
             <TableRow key={o.id}>
               <TableCell className="font-medium text-foreground">
-                {o.vehiculo.marca} {o.vehiculo.modelo}
+                <Link href={`/taller/ordenes/${o.id}`} className="hover:text-brand">
+                  {o.vehiculo ? `${o.vehiculo.marca} ${o.vehiculo.modelo}` : (o.vehiculoExterno ?? "Vehículo externo")}
+                </Link>
               </TableCell>
               <TableCell>{new Date(o.fechaIngreso).toLocaleDateString("es-UY")}</TableCell>
-              <TableCell className="max-w-xs truncate">{o.trabajos}</TableCell>
+              <TableCell className="max-w-xs truncate">{o.problema}</TableCell>
               <TableCell>{o.responsable ?? "—"}</TableCell>
+              <TableCell>
+                <OrdenEstadoBadge estado={o.estado} />
+              </TableCell>
               <TableCell>
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/api/documentos/orden-taller/${o.id}`} target="_blank" rel="noopener noreferrer">
@@ -77,7 +84,7 @@ export default async function TallerPage() {
           ))}
           {ordenes.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+              <TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
                 No hay órdenes de trabajo registradas.
               </TableCell>
             </TableRow>

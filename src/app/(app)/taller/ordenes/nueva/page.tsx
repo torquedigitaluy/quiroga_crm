@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
-import { assertCanAny } from "@/lib/permissions/engine";
-import { OrdenTallerForm } from "@/components/documentos/OrdenTallerForm";
-import { createOrdenTaller } from "../../../documentos/actions";
+import { assertCan } from "@/lib/permissions/engine";
+import { OrdenTallerForm } from "@/components/taller/OrdenTallerForm";
+import { createOrdenTaller } from "../../actions";
 
-export default async function NuevaOrdenTallerDesdeTallerPage() {
-  await assertCanAny(["docs.generate", "taller.edit"]);
+export default async function NuevaOrdenTallerPage() {
+  await assertCan("taller.edit");
 
   const vehiculos = await db.vehiculo.findMany({ where: { esVehiculo: true }, orderBy: { marca: "asc" } });
 
