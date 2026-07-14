@@ -80,7 +80,7 @@ export default async function DashboardPage() {
           <SenadosDetalle vehiculos={senadoVehiculos} />
         </ClickableStatCard>
         <StatCard label="Publicados" value={stockPorEstado.PUBLICADO.toString()} variant="default" />
-        <StatCard label="Vendidos" value={stockPorEstado.VENDIDO.toString()} variant="success" />
+        <StatCard label="Entregados" value={stockPorEstado.VENDIDO.toString()} variant="success" />
       </div>
 
       {puedeVerFinanzasDeLaEmpresa ? (
@@ -294,12 +294,17 @@ async function DashboardVendedor({ vendedorId }: { vendedorId: string }) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [ventasDelMes, ventasUltimos6Meses] = await Promise.all([
+  const [ventasDelMes, ventasUltimos6Meses, accesoriosDelMes] = await Promise.all([
     db.venta.findMany({ where: { vendedorId, fechaEntrega: { gte: monthStart } } }),
     db.venta.findMany({ where: { vendedorId, fechaEntrega: { gte: sixMonthsAgo } } }),
+    db.ventaAccesorio.findMany({ where: { vendedorId, fecha: { gte: monthStart } } }),
   ]);
 
-  const comisionDelMes = ventasDelMes.reduce((sum, v) => sum + v.comisionVentaUsdCents + v.comisionTituloUsdCents, 0);
+  const comisionVehiculosDelMes = ventasDelMes.reduce(
+    (sum, v) => sum + v.comisionVentaUsdCents + v.comisionTituloUsdCents,
+    0,
+  );
+  const comisionAccesoriosDelMes = accesoriosDelMes.reduce((sum, v) => sum + v.comisionAccesorioUsdCents, 0);
   const chartData = buildChartData(
     ventasUltimos6Meses,
     now,
@@ -310,7 +315,8 @@ async function DashboardVendedor({ vendedorId }: { vendedorId: string }) {
     <>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Mis ventas del mes" value={ventasDelMes.length.toString()} />
-        <StatCard label="Mi comisión del mes" value={formatCents(comisionDelMes, "USD")} />
+        <StatCard label="Comisión vehículos del mes" value={formatCents(comisionVehiculosDelMes, "USD")} />
+        <StatCard label="Comisión accesorios del mes" value={formatCents(comisionAccesoriosDelMes, "USD")} />
       </div>
 
       <Card>

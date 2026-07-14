@@ -110,7 +110,6 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.move_location",
     "stock.edit_status",
     "ventas.view_own",
-    "clientes.view",
   ],
   CONTADORA: [
     "dashboard.view",

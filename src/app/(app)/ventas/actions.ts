@@ -148,3 +148,56 @@ export async function updateVenta(id: string, formData: FormData) {
   revalidatePath(`/ventas/${id}`);
   redirect("/ventas");
 }
+
+export async function createVentaAccesorio(formData: FormData) {
+  await assertCan("ventas.create");
+
+  const accesorioId = String(formData.get("accesorioId") ?? "").trim();
+  const clienteNombre = String(formData.get("clienteNombre") ?? "").trim();
+  const clienteApellido = String(formData.get("clienteApellido") ?? "").trim();
+  const clienteCi = String(formData.get("clienteCi") ?? "").trim();
+  const clienteContacto = String(formData.get("clienteContacto") ?? "").trim();
+  const vendedorId = String(formData.get("vendedorId") ?? "").trim();
+  const fecha = String(formData.get("fecha") ?? "");
+  const precioVenta = parseFloat(String(formData.get("precioVentaUsdCents") ?? "0")) || 0;
+  const comisionAccesorio = parseFloat(String(formData.get("comisionAccesorioUsdCents") ?? "0")) || 0;
+
+  if (!accesorioId) throw new Error("Elegí un accesorio");
+
+  const accesorio = await db.vehiculo.findUnique({ where: { id: accesorioId } });
+  if (!accesorio || accesorio.esVehiculo) throw new Error("El accesorio no existe");
+
+  let clienteId: string | null = null;
+  if (clienteNombre) {
+    const cliente = await findOrCreateCliente({
+      nombre: clienteNombre,
+      apellido: clienteApellido,
+      ci: clienteCi,
+      contacto: clienteContacto,
+    });
+    clienteId = cliente.id;
+  }
+
+  await db.ventaAccesorio.create({
+    data: {
+      accesorioId,
+      clienteId,
+      vendedorId: vendedorId || null,
+      fecha: fecha ? new Date(fecha) : new Date(),
+      precioVentaUsdCents: unitsToCents(precioVenta),
+      comisionAccesorioUsdCents: unitsToCents(comisionAccesorio),
+    },
+  });
+
+  await db.vehiculo.update({ where: { id: accesorioId }, data: { estado: "VENDIDO" } });
+  await logAudit({
+    accion: "CREAR",
+    entidad: "Venta de accesorio",
+    entidadId: accesorioId,
+    descripcion: `Registró la venta del accesorio ${accesorio.marca} ${accesorio.modelo}`,
+  });
+
+  revalidatePath("/ventas/planilla");
+  revalidatePath("/stock");
+  redirect("/stock?tab=accesorios");
+}

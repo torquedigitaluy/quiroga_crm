@@ -4,7 +4,7 @@ const ESTADO_CONFIG = {
   APRONTANDO: { label: "Taller / Aprontando", variant: "warning" as const },
   SENADO: { label: "Señado", variant: "danger" as const },
   PUBLICADO: { label: "Publicado", variant: "default" as const },
-  VENDIDO: { label: "Vendido", variant: "success" as const },
+  VENDIDO: { label: "Entregado", variant: "success" as const },
 };
 
 export function StatusBadge({ estado }: { estado: keyof typeof ESTADO_CONFIG }) {

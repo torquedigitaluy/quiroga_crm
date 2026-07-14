@@ -164,8 +164,9 @@ model User {
 
   roles                UserRole[]
   permissions          UserPermission[]
-  ventas               Venta[]    @relation("VendedorVentas")
-  vehiculosResponsable Vehiculo[] @relation("VehiculoResponsable")
+  ventas               Venta[]           @relation("VendedorVentas")
+  ventasAccesorio      VentaAccesorio[]  @relation("VendedorVentasAccesorio")
+  vehiculosResponsable Vehiculo[]        @relation("VehiculoResponsable")
 }
 
 model Role {
@@ -249,6 +250,7 @@ model Vehiculo {
 
   costeo               VehiculoCosteo?
   ventas               Venta[]
+  ventasAccesorio      VentaAccesorio[]     @relation("AccesorioVentas")
   creditosBBVA         CreditoBBVA[]
   tramitesEscribania   EscribaniaTramite[]
   financiacionesTitulo FinanciacionTitulo[]
@@ -272,6 +274,7 @@ model Cliente {
   updatedAt DateTime @updatedAt
 
   ventas               Venta[]
+  ventasAccesorio      VentaAccesorio[]
   creditosBBVA         CreditoBBVA[]
   tramitesEscribania   EscribaniaTramite[]
   financiacionesTitulo FinanciacionTitulo[]
@@ -335,6 +338,23 @@ model Venta {
   updatedAt              DateTime   @updatedAt
 
   @@index([fechaEntrega])
+  @@index([vendedorId])
+}
+
+model VentaAccesorio {
+  id                        String   @id @default(cuid())
+  accesorioId               String
+  accesorio                 Vehiculo @relation("AccesorioVentas", fields: [accesorioId], references: [id])
+  clienteId                 String?
+  cliente                   Cliente? @relation(fields: [clienteId], references: [id])
+  vendedorId                String?
+  vendedor                  User?    @relation("VendedorVentasAccesorio", fields: [vendedorId], references: [id])
+  fecha                     DateTime @default(now())
+  precioVentaUsdCents       Int
+  comisionAccesorioUsdCents Int      @default(0)
+  createdAt                 DateTime @default(now())
+
+  @@index([fecha])
   @@index([vendedorId])
 }
 

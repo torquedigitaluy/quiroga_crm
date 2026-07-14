@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Plus, ArrowUpDown } from "lucide-react";
+import { Plus, ArrowUpDown, Tag } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   await assertCan("stock.view");
   const sp = await searchParams;
   const sortInfo = parseSortCombo(sp.sortCombo);
+  const puedeVender = await can("ventas.create");
 
   const [vehiculos, accesorios] = await Promise.all([
     db.vehiculo.findMany({
@@ -165,21 +166,40 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
                 <TableHead>Categoría</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Precio</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead>Comentarios</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {accesorios.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell className="font-medium text-foreground">{a.marca}</TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    <Link href={`/stock/${a.id}`} className="hover:text-brand">
+                      {a.marca}
+                    </Link>
+                  </TableCell>
                   <TableCell>{a.modelo}</TableCell>
                   <TableCell>{a.precioVentaUsdCents ? formatCents(a.precioVentaUsdCents, "USD") : "—"}</TableCell>
+                  <TableCell>
+                    <StatusBadge estado={a.estado} />
+                  </TableCell>
                   <TableCell>{a.comentarios ?? "—"}</TableCell>
+                  <TableCell>
+                    {puedeVender && a.estado !== "VENDIDO" && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/ventas/accesorios/nueva?accesorioId=${a.id}`}>
+                          <Tag className="h-3.5 w-3.5" />
+                          Vender
+                        </Link>
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {accesorios.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                     No hay accesorios cargados.
                   </TableCell>
                 </TableRow>
