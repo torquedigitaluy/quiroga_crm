@@ -3,8 +3,19 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
+const DOCE_HORAS_MS = 12 * 60 * 60 * 1000;
+const VEINTICUATRO_HORAS_MS = 24 * 60 * 60 * 1000;
+
+/** Administradores renuevan sesión cada 12hs; el resto de los roles, cada 24hs. */
+async function duracionSesionMs(userId: string): Promise<number> {
+  const esSuperadmin = await db.userRole.findFirst({
+    where: { userId, role: { key: "SUPERADMIN" } },
+  });
+  return esSuperadmin ? DOCE_HORAS_MS : VEINTICUATRO_HORAS_MS;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: VEINTICUATRO_HORAS_MS / 1000 },
   pages: { signIn: "/login" },
   trustHost: true,
   providers: [
@@ -31,8 +42,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     jwt: async ({ token, user }) => {
-      if (user) {
+      if (user?.id) {
         token.userId = user.id;
+        token.expiresAt = Date.now() + (await duracionSesionMs(user.id));
+      }
+      // Expiración absoluta desde el login (no rolling): al vencer, se limpia
+      // el token para que session() la trate como sesión cerrada.
+      const expiresAt = typeof token.expiresAt === "number" ? token.expiresAt : null;
+      if (expiresAt !== null && Date.now() > expiresAt) {
+        delete token.userId;
+        delete token.expiresAt;
       }
       return token;
     },
