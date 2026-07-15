@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { costoTitulosEfectivoCents } from "@/lib/titulos";
 import { Button } from "@/components/ui/button";
@@ -10,14 +10,25 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Can } from "@/components/auth/Can";
 import { SeccionTabs } from "@/components/escribania/SeccionTabs";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
+import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
+import { RestoreButton } from "@/components/ui/RestoreButton";
+import { archiveFinanciacionTitulo, restoreFinanciacionTitulo } from "./actions";
 
 const FORMA_PAGO_LABELS: Record<string, string> = { CONTADO: "Contado", FINANCIADO: "Financiado" };
 
-export default async function TitulosPage() {
+export default async function TitulosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ archivadas?: string }>;
+}) {
   await assertCan("titulos.view");
+  const editable = await can("titulos.edit");
+  const { archivadas } = await searchParams;
+  const verArchivadas = archivadas === "1";
 
   const [financiaciones, config] = await Promise.all([
     db.financiacionTitulo.findMany({
+      where: { archivedAt: verArchivadas ? { not: null } : null },
       include: { vehiculo: true, cliente: true, entregas: true },
       orderBy: { fechaVenta: "desc" },
     }),
@@ -29,17 +40,30 @@ export default async function TitulosPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Escribanía y Títulos</h1>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {verArchivadas ? "Financiaciones eliminadas" : "Escribanía y Títulos"}
+          </h1>
           <p className="text-sm text-muted-foreground">{financiaciones.length} planes registrados</p>
         </div>
-        <Can permission="titulos.edit">
-          <Button asChild>
-            <Link href="/titulos/nuevo">
-              <Plus className="h-4 w-4" />
-              Nueva financiación
-            </Link>
-          </Button>
-        </Can>
+        <div className="flex items-center gap-2">
+          {editable && (
+            <Button variant="outline" asChild>
+              <Link href={verArchivadas ? "/titulos" : "/titulos?archivadas=1"}>
+                {verArchivadas ? "Ver activos" : "Ver eliminados"}
+              </Link>
+            </Button>
+          )}
+          {!verArchivadas && (
+            <Can permission="titulos.edit">
+              <Button asChild>
+                <Link href="/titulos/nuevo">
+                  <Plus className="h-4 w-4" />
+                  Nueva financiación
+                </Link>
+              </Button>
+            </Can>
+          )}
+        </div>
       </div>
 
       <SeccionTabs active="titulos" />
@@ -74,9 +98,15 @@ export default async function TitulosPage() {
               return (
                 <TableRow key={f.id}>
                   <TableCell>
-                    <Link href={`/titulos/${f.id}`} className="font-medium text-foreground hover:text-brand">
-                      {f.vehiculo.marca} {f.vehiculo.modelo}
-                    </Link>
+                    {verArchivadas ? (
+                      <span className="font-medium text-foreground">
+                        {f.vehiculo.marca} {f.vehiculo.modelo}
+                      </span>
+                    ) : (
+                      <Link href={`/titulos/${f.id}`} className="font-medium text-foreground hover:text-brand">
+                        {f.vehiculo.marca} {f.vehiculo.modelo}
+                      </Link>
+                    )}
                   </TableCell>
                   <TableCell>{f.vehiculo.matricula ?? "—"}</TableCell>
                   <TableCell>{f.cliente ? `${f.cliente.nombre} ${f.cliente.apellido ?? ""}` : "—"}</TableCell>
@@ -94,8 +124,21 @@ export default async function TitulosPage() {
                   <TableCell className={saldo > 0 ? "text-danger" : "text-success"}>
                     {formatCents(saldo, f.costoMoneda)}
                   </TableCell>
-                  <TableCell>
-                    {saldo > 0 && <WhatsAppButton phone={f.cliente?.contacto} message={mensaje} label="Avisar" />}
+                  <TableCell className="flex justify-end gap-2">
+                    {verArchivadas ? (
+                      editable && <RestoreButton onConfirm={restoreFinanciacionTitulo.bind(null, f.id)} />
+                    ) : (
+                      <>
+                        {saldo > 0 && <WhatsAppButton phone={f.cliente?.contacto} message={mensaje} label="Avisar" />}
+                        {editable && (
+                          <ConfirmArchiveButton
+                            onConfirm={archiveFinanciacionTitulo.bind(null, f.id)}
+                            title="¿Eliminar esta financiación?"
+                            description="Va a dejar de aparecer en la lista, pero queda guardada en Financiaciones eliminadas y se puede restaurar en cualquier momento."
+                          />
+                        )}
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -103,7 +146,7 @@ export default async function TitulosPage() {
             {financiaciones.length === 0 && (
               <TableRow>
                 <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                  No hay financiaciones de títulos registradas.
+                  {verArchivadas ? "No hay financiaciones eliminadas." : "No hay financiaciones de títulos registradas."}
                 </TableCell>
               </TableRow>
             )}

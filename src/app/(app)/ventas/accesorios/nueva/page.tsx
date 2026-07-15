@@ -13,7 +13,7 @@ export default async function NuevaVentaAccesorioPage({
 
   const [accesorios, usuarios] = await Promise.all([
     db.vehiculo.findMany({
-      where: { esVehiculo: false, estado: { not: "VENDIDO" } },
+      where: { esVehiculo: false, estado: { not: "VENDIDO" }, archivedAt: null },
       orderBy: { marca: "asc" },
     }),
     db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } }),

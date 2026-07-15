@@ -9,19 +9,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { GastoTallerForm } from "@/components/taller/GastoTallerForm";
 import { OrdenEstadoBadge } from "@/components/taller/OrdenEstadoBadge";
-import { createGastoTaller } from "./actions";
+import { RestoreButton } from "@/components/ui/RestoreButton";
+import { createGastoTaller, restoreOrdenTaller } from "./actions";
 
-export default async function TallerPage() {
+export default async function TallerPage({ searchParams }: { searchParams: Promise<{ archivadas?: string }> }) {
   const user = await assertCan("taller.view");
   const perms = await getEffectivePermissions(user.id);
   const editable = perms.has("taller.edit");
+  const { archivadas } = await searchParams;
+  const verArchivadas = archivadas === "1";
 
   const [cuenta, ordenes] = await Promise.all([
     db.cuentaBancaria.findUnique({
       where: { nombre: "GASTOS_TALLER" },
       include: { movimientos: { orderBy: { fecha: "desc" } } },
     }),
-    db.ordenTaller.findMany({ include: { vehiculo: true }, orderBy: { createdAt: "desc" }, take: 20 }),
+    db.ordenTaller.findMany({
+      where: { archivedAt: verArchivadas ? { not: null } : null },
+      include: { vehiculo: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
   ]);
 
   const movimientos = cuenta?.movimientos ?? [];
@@ -39,13 +47,26 @@ export default async function TallerPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Órdenes de trabajo</h2>
-        <Button asChild>
-          <Link href="/taller/ordenes/nueva">
-            <Plus className="h-4 w-4" />
-            Nueva orden
-          </Link>
-        </Button>
+        <h2 className="text-lg font-semibold text-foreground">
+          {verArchivadas ? "Órdenes de trabajo eliminadas" : "Órdenes de trabajo"}
+        </h2>
+        <div className="flex items-center gap-2">
+          {editable && (
+            <Button variant="outline" asChild>
+              <Link href={verArchivadas ? "/taller" : "/taller?archivadas=1"}>
+                {verArchivadas ? "Ver activas" : "Ver eliminadas"}
+              </Link>
+            </Button>
+          )}
+          {!verArchivadas && (
+            <Button asChild>
+              <Link href="/taller/ordenes/nueva">
+                <Plus className="h-4 w-4" />
+                Nueva orden
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
       <Table>
         <TableHeader>
@@ -62,9 +83,15 @@ export default async function TallerPage() {
           {ordenes.map((o) => (
             <TableRow key={o.id}>
               <TableCell className="font-medium text-foreground">
-                <Link href={`/taller/ordenes/${o.id}`} className="hover:text-brand">
-                  {o.vehiculo ? `${o.vehiculo.marca} ${o.vehiculo.modelo}` : (o.vehiculoExterno ?? "Vehículo externo")}
-                </Link>
+                {verArchivadas ? (
+                  <>
+                    {o.vehiculo ? `${o.vehiculo.marca} ${o.vehiculo.modelo}` : (o.vehiculoExterno ?? "Vehículo externo")}
+                  </>
+                ) : (
+                  <Link href={`/taller/ordenes/${o.id}`} className="hover:text-brand">
+                    {o.vehiculo ? `${o.vehiculo.marca} ${o.vehiculo.modelo}` : (o.vehiculoExterno ?? "Vehículo externo")}
+                  </Link>
+                )}
               </TableCell>
               <TableCell>{new Date(o.fechaIngreso).toLocaleDateString("es-UY")}</TableCell>
               <TableCell className="max-w-xs truncate">{o.problema}</TableCell>
@@ -73,19 +100,23 @@ export default async function TallerPage() {
                 <OrdenEstadoBadge estado={o.estado} />
               </TableCell>
               <TableCell>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`/api/documentos/orden-taller/${o.id}`} target="_blank" rel="noopener noreferrer">
-                    <FileDown className="h-3.5 w-3.5" />
-                    PDF
-                  </a>
-                </Button>
+                {verArchivadas ? (
+                  editable && <RestoreButton onConfirm={restoreOrdenTaller.bind(null, o.id)} />
+                ) : (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`/api/documentos/orden-taller/${o.id}`} target="_blank" rel="noopener noreferrer">
+                      <FileDown className="h-3.5 w-3.5" />
+                      PDF
+                    </a>
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}
           {ordenes.length === 0 && (
             <TableRow>
               <TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
-                No hay órdenes de trabajo registradas.
+                {verArchivadas ? "No hay órdenes de trabajo eliminadas." : "No hay órdenes de trabajo registradas."}
               </TableCell>
             </TableRow>
           )}

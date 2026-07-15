@@ -106,15 +106,32 @@ export async function updateTramite(id: string, formData: FormData) {
 
 export async function deleteTramite(id: string) {
   await assertCan("escribania.edit");
-  const tramite = await db.escribaniaTramite.findUnique({ where: { id }, include: { vehiculo: true } });
-  await db.escribaniaTramite.delete({ where: { id } });
+  const tramite = await db.escribaniaTramite.update({
+    where: { id },
+    data: { archivedAt: new Date() },
+    include: { vehiculo: true },
+  });
   await logAudit({
     accion: "ELIMINAR",
     entidad: "Trámite de escribanía",
     entidadId: id,
-    descripcion: tramite
-      ? `Eliminó el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`
-      : `Eliminó un trámite de escribanía (${id})`,
+    descripcion: `Archivó el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`,
+  });
+  revalidatePath("/escribania");
+}
+
+export async function restoreTramite(id: string) {
+  await assertCan("escribania.edit");
+  const tramite = await db.escribaniaTramite.update({
+    where: { id },
+    data: { archivedAt: null },
+    include: { vehiculo: true },
+  });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Trámite de escribanía",
+    entidadId: id,
+    descripcion: `Restauró el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`,
   });
   revalidatePath("/escribania");
 }

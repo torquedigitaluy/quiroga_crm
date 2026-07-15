@@ -8,15 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Can } from "@/components/auth/Can";
+import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
+import { RestoreButton } from "@/components/ui/RestoreButton";
+import { archiveVenta, restoreVenta } from "./actions";
 
 export default async function VentasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string; vendedor?: string }>;
+  searchParams: Promise<{ mes?: string; vendedor?: string; archivadas?: string }>;
 }) {
   await assertCan("ventas.view_full");
-  const { mes, vendedor } = await searchParams;
+  const { mes, vendedor, archivadas } = await searchParams;
   const puedeEditar = await can("ventas.edit");
+  const verArchivadas = archivadas === "1";
 
   let dateFilter: { gte: Date; lt: Date } | undefined;
   if (mes) {
@@ -27,6 +31,7 @@ export default async function VentasPage({
   const [ventas, vendedores] = await Promise.all([
     db.venta.findMany({
       where: {
+        archivedAt: verArchivadas ? { not: null } : null,
         ...(dateFilter ? { fechaEntrega: dateFilter } : {}),
         ...(vendedor ? { vendedorId: vendedor } : {}),
       },
@@ -45,45 +50,58 @@ export default async function VentasPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Ventas</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{verArchivadas ? "Ventas eliminadas" : "Ventas"}</h1>
           <p className="text-sm text-muted-foreground">
             {ventas.length} ventas · Comisiones totales: {formatCents(totalComisiones, "USD")}
           </p>
         </div>
-        <Can permission="ventas.create">
-          <Button asChild>
-            <Link href="/ventas/nueva">
-              <Plus className="h-4 w-4" />
-              Registrar venta
-            </Link>
-          </Button>
-        </Can>
+        <div className="flex items-center gap-2">
+          {puedeEditar && (
+            <Button variant="outline" asChild>
+              <Link href={verArchivadas ? "/ventas" : "/ventas?archivadas=1"}>
+                {verArchivadas ? "Ver ventas activas" : "Ver eliminadas"}
+              </Link>
+            </Button>
+          )}
+          {!verArchivadas && (
+            <Can permission="ventas.create">
+              <Button asChild>
+                <Link href="/ventas/nueva">
+                  <Plus className="h-4 w-4" />
+                  Registrar venta
+                </Link>
+              </Button>
+            </Can>
+          )}
+        </div>
       </div>
 
-      <form className="flex flex-wrap items-end gap-2">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">Mes</label>
-          <Input name="mes" type="month" defaultValue={mes} className="w-48" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">Vendedor</label>
-          <select
-            name="vendedor"
-            defaultValue={vendedor ?? ""}
-            className="h-9 w-48 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-          >
-            <option value="">Todos</option>
-            {vendedores.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button type="submit" variant="outline">
-          Filtrar
-        </Button>
-      </form>
+      {!verArchivadas && (
+        <form className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-muted-foreground">Mes</label>
+            <Input name="mes" type="month" defaultValue={mes} className="w-48" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-muted-foreground">Vendedor</label>
+            <select
+              name="vendedor"
+              defaultValue={vendedor ?? ""}
+              className="h-9 w-48 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
+              <option value="">Todos</option>
+              {vendedores.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button type="submit" variant="outline">
+            Filtrar
+          </Button>
+        </form>
+      )}
 
       <Table>
         <TableHeader>
@@ -117,13 +135,24 @@ export default async function VentasPage({
               <TableCell>{formatCents(v.comisionVentaUsdCents, "USD")}</TableCell>
               <TableCell>{formatCents(v.comisionTituloUsdCents, "USD")}</TableCell>
               {puedeEditar && (
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/ventas/${v.id}`}>
-                      <Pencil className="h-4 w-4" />
-                      Editar
-                    </Link>
-                  </Button>
+                <TableCell className="flex justify-end gap-2 text-right">
+                  {verArchivadas ? (
+                    <RestoreButton onConfirm={restoreVenta.bind(null, v.id)} />
+                  ) : (
+                    <>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/ventas/${v.id}`}>
+                          <Pencil className="h-4 w-4" />
+                          Editar
+                        </Link>
+                      </Button>
+                      <ConfirmArchiveButton
+                        onConfirm={archiveVenta.bind(null, v.id)}
+                        title="¿Eliminar esta venta?"
+                        description="Va a dejar de aparecer en la lista, pero queda guardada en Ventas eliminadas y se puede restaurar en cualquier momento."
+                      />
+                    </>
+                  )}
                 </TableCell>
               )}
             </TableRow>
@@ -131,7 +160,9 @@ export default async function VentasPage({
           {ventas.length === 0 && (
             <TableRow>
               <TableCell colSpan={puedeEditar ? 11 : 10} className="py-8 text-center text-muted-foreground">
-                No hay ventas registradas {mes || vendedor ? "con ese filtro" : "todavía"}.
+                {verArchivadas
+                  ? "No hay ventas eliminadas."
+                  : `No hay ventas registradas ${mes || vendedor ? "con ese filtro" : "todavía"}.`}
               </TableCell>
             </TableRow>
           )}

@@ -6,7 +6,10 @@ import { createOrdenTaller } from "../../actions";
 export default async function NuevaOrdenTallerPage() {
   await assertCan("taller.edit");
 
-  const vehiculos = await db.vehiculo.findMany({ where: { esVehiculo: true }, orderBy: { marca: "asc" } });
+  const vehiculos = await db.vehiculo.findMany({
+    where: { esVehiculo: true, archivedAt: null },
+    orderBy: { marca: "asc" },
+  });
 
   return (
     <div className="flex flex-col gap-6">

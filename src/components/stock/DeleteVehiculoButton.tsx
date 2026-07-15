@@ -30,7 +30,8 @@ export function DeleteVehiculoButton({ id }: { id: string }) {
         <DialogHeader>
           <DialogTitle>Eliminar vehículo</DialogTitle>
           <DialogDescription>
-            Esta acción no se puede deshacer. Se eliminará el vehículo y su información de costos asociada.
+            Va a dejar de aparecer en el stock, pero no se pierde: queda guardado en la pestaña &quot;Archivo&quot; y
+            se puede restaurar en cualquier momento.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -42,7 +43,7 @@ export function DeleteVehiculoButton({ id }: { id: string }) {
             disabled={pending}
             onClick={() => startTransition(() => deleteVehiculo(id))}
           >
-            {pending ? "Eliminando…" : "Eliminar definitivamente"}
+            {pending ? "Eliminando…" : "Eliminar"}
           </Button>
         </DialogFooter>
       </DialogContent>

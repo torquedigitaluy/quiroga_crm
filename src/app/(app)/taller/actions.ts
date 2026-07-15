@@ -236,3 +236,18 @@ export async function createGastoTaller(formData: FormData) {
 
   revalidatePath("/taller");
 }
+
+export async function archiveOrdenTaller(id: string) {
+  await assertCan("taller.edit");
+  await db.ordenTaller.update({ where: { id }, data: { archivedAt: new Date() } });
+  await logAudit({ accion: "ELIMINAR", entidad: "Orden de taller", entidadId: id, descripcion: "Archivó la orden de taller" });
+  revalidatePath("/taller");
+  redirect("/taller");
+}
+
+export async function restoreOrdenTaller(id: string) {
+  await assertCan("taller.edit");
+  await db.ordenTaller.update({ where: { id }, data: { archivedAt: null } });
+  await logAudit({ accion: "EDITAR", entidad: "Orden de taller", entidadId: id, descripcion: "Restauró la orden de taller" });
+  revalidatePath("/taller");
+}

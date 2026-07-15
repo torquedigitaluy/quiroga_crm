@@ -8,7 +8,12 @@ export default async function DocumentosPage() {
   await assertCan("docs.generate");
 
   const [ventas, conformes] = await Promise.all([
-    db.venta.findMany({ include: { vehiculo: true, cliente: true }, orderBy: { createdAt: "desc" }, take: 20 }),
+    db.venta.findMany({
+      where: { archivedAt: null },
+      include: { vehiculo: true, cliente: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
     db.conforme.findMany({
       include: { financiacionPropia: true, cuota: true },
       orderBy: { createdAt: "desc" },

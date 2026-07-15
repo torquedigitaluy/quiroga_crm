@@ -6,6 +6,7 @@ export async function GET() {
   await assertCan("bbva.view");
 
   const creditos = await db.creditoBBVA.findMany({
+    where: { archivedAt: null },
     orderBy: { nombre: "asc" },
     select: { nombre: true, ci: true },
   });

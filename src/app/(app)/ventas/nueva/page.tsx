@@ -8,7 +8,7 @@ export default async function NuevaVentaPage() {
 
   const [vehiculos, usuarios] = await Promise.all([
     db.vehiculo.findMany({
-      where: { esVehiculo: true, estado: { not: "SENADO" } },
+      where: { esVehiculo: true, estado: { not: "SENADO" }, archivedAt: null },
       orderBy: { marca: "asc" },
     }),
     db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } }),

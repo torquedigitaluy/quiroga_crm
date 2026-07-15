@@ -93,3 +93,35 @@ export async function deleteEntrega(financiacionTituloId: string, entregaId: str
   revalidatePath(`/titulos/${financiacionTituloId}`);
   revalidatePath("/titulos");
 }
+
+export async function archiveFinanciacionTitulo(id: string) {
+  await assertCan("titulos.edit");
+  const fin = await db.financiacionTitulo.update({
+    where: { id },
+    data: { archivedAt: new Date() },
+    include: { vehiculo: true },
+  });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Financiación de títulos",
+    entidadId: id,
+    descripcion: `Archivó la financiación de títulos de ${fin.vehiculo.marca} ${fin.vehiculo.modelo}`,
+  });
+  revalidatePath("/titulos");
+}
+
+export async function restoreFinanciacionTitulo(id: string) {
+  await assertCan("titulos.edit");
+  const fin = await db.financiacionTitulo.update({
+    where: { id },
+    data: { archivedAt: null },
+    include: { vehiculo: true },
+  });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Financiación de títulos",
+    entidadId: id,
+    descripcion: `Restauró la financiación de títulos de ${fin.vehiculo.marca} ${fin.vehiculo.modelo}`,
+  });
+  revalidatePath("/titulos");
+}

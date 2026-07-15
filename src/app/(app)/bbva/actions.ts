@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
+import { logAudit } from "@/lib/audit";
 import { creditoBBVASchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -49,5 +50,29 @@ export async function createCreditoBBVA(formData: FormData) {
 export async function updateEstadoCredito(id: string, estado: string) {
   await assertCan("bbva.edit");
   await db.creditoBBVA.update({ where: { id }, data: { estado: estado as "PENDIENTE" | "APROBADO" | "RECHAZADO" } });
+  revalidatePath("/bbva");
+}
+
+export async function archiveCreditoBBVA(id: string) {
+  await assertCan("bbva.edit");
+  const credito = await db.creditoBBVA.update({ where: { id }, data: { archivedAt: new Date() } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Crédito BBVA",
+    entidadId: id,
+    descripcion: `Archivó el crédito BBVA de ${credito.nombre}`,
+  });
+  revalidatePath("/bbva");
+}
+
+export async function restoreCreditoBBVA(id: string) {
+  await assertCan("bbva.edit");
+  const credito = await db.creditoBBVA.update({ where: { id }, data: { archivedAt: null } });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Crédito BBVA",
+    entidadId: id,
+    descripcion: `Restauró el crédito BBVA de ${credito.nombre}`,
+  });
   revalidatePath("/bbva");
 }

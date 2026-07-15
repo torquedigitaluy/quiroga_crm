@@ -10,6 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusBadge, UbicacionBadge } from "@/components/stock/StatusBadge";
 import { StockSortSelect } from "@/components/stock/StockSortSelect";
 import { Can } from "@/components/auth/Can";
+import { RestoreButton } from "@/components/ui/RestoreButton";
+import { restoreVehiculo } from "./actions";
 
 type SearchParams = { q?: string; sortCombo?: string; tab?: string };
 
@@ -47,11 +49,13 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const sortInfo = parseSortCombo(sp.sortCombo);
   const puedeVender = await can("ventas.create");
+  const puedeArchivar = await can("stock.delete");
 
-  const [vehiculos, accesorios] = await Promise.all([
+  const [vehiculos, accesorios, archivados] = await Promise.all([
     db.vehiculo.findMany({
       where: {
         esVehiculo: true,
+        archivedAt: null,
         ...(sp.q
           ? {
               OR: [
@@ -64,7 +68,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
       },
       orderBy: { [sortInfo.field]: sortInfo.dir },
     }),
-    db.vehiculo.findMany({ where: { esVehiculo: false }, orderBy: { marca: "asc" } }),
+    db.vehiculo.findMany({ where: { esVehiculo: false, archivedAt: null }, orderBy: { marca: "asc" } }),
+    db.vehiculo.findMany({ where: { archivedAt: { not: null } }, orderBy: { archivedAt: "desc" } }),
   ]);
 
   return (
@@ -76,10 +81,11 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      <Tabs defaultValue={sp.tab === "accesorios" ? "accesorios" : "vehiculos"}>
+      <Tabs defaultValue={sp.tab === "accesorios" ? "accesorios" : sp.tab === "archivo" ? "archivo" : "vehiculos"}>
         <TabsList>
           <TabsTrigger value="vehiculos">Vehículos</TabsTrigger>
           <TabsTrigger value="accesorios">Accesorios</TabsTrigger>
+          {puedeArchivar && <TabsTrigger value="archivo">Archivo ({archivados.length})</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="vehiculos" className="flex flex-col gap-4">
@@ -207,6 +213,47 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
             </TableBody>
           </Table>
         </TabsContent>
+
+        {puedeArchivar && (
+          <TabsContent value="archivo" className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              Vehículos y accesorios eliminados. Se pueden restaurar en cualquier momento.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Marca / Modelo</TableHead>
+                  <TableHead>Matrícula</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Eliminado</TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {archivados.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="font-medium text-foreground">
+                      {v.marca} {v.modelo}
+                    </TableCell>
+                    <TableCell>{v.matricula ?? "—"}</TableCell>
+                    <TableCell>{v.esVehiculo ? "Vehículo" : "Accesorio"}</TableCell>
+                    <TableCell>{v.archivedAt ? new Date(v.archivedAt).toLocaleDateString("es-UY") : "—"}</TableCell>
+                    <TableCell>
+                      <RestoreButton onConfirm={restoreVehiculo.bind(null, v.id)} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {archivados.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                      No hay vehículos ni accesorios eliminados.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -286,6 +286,7 @@ model Vehiculo {
   fechaIngreso        DateTime       @default(now())
   responsableId       String?
   responsable         User?          @relation("VehiculoResponsable", fields: [responsableId], references: [id])
+  archivedAt          DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
@@ -375,6 +376,7 @@ model Venta {
   propietarioVehiculo    String?
   comisionVentaUsdCents  Int        @default(0)
   comisionTituloUsdCents Int        @default(0)
+  archivedAt             DateTime?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 
@@ -413,6 +415,7 @@ model CreditoBBVA {
   vehiculo                Vehiculo?     @relation(fields: [vehiculoId], references: [id])
   clienteId               String?
   cliente                 Cliente?      @relation(fields: [clienteId], references: [id])
+  archivedAt              DateTime?
   createdAt               DateTime      @default(now())
 
   @@index([fechaFirma])
@@ -439,6 +442,7 @@ model EscribaniaTramite {
   fechaEntregaTitulos DateTime?
   ubicacionTitulos    UbicacionTitulos @default(CLIENTE)
   comentarios         String?
+  archivedAt          DateTime?
   createdAt           DateTime         @default(now())
 
   @@index([fecha])
@@ -459,6 +463,7 @@ model FinanciacionTitulo {
   costoMoneda          Moneda    @default(USD)
   cartaDePago          Boolean   @default(false)
   formaPago            FormaPago @default(CONTADO)
+  archivedAt           DateTime?
   createdAt            DateTime  @default(now())
 
   entregas EntregaTitulo[]
@@ -527,6 +532,7 @@ model FinanciacionPropia {
   montoCuotaUsdCents      Int
   fechaPrimeraCuota       DateTime?
   diaVencimientoMensual   Int       @default(10)
+  archivedAt              DateTime?
   createdAt               DateTime  @default(now())
 
   cuotas    CuotaPropia[]
@@ -672,6 +678,7 @@ model OrdenTaller {
   manoDeObraCents    Int                @default(0)
   responsable        String?
   estado             EstadoOrdenTaller  @default(PENDIENTE)
+  archivedAt         DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 

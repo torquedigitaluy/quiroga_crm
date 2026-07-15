@@ -10,7 +10,7 @@ export default async function PlanillaVentaPage() {
 
   const [ventas, ventasAccesorio, vendedores, agrupado] = await Promise.all([
     db.venta.findMany({
-      where: { vendedorId: user.id },
+      where: { vendedorId: user.id, archivedAt: null },
       include: { vehiculo: true },
       orderBy: { fechaEntrega: "desc" },
     }),
@@ -22,6 +22,7 @@ export default async function PlanillaVentaPage() {
     db.user.findMany({ where: { esVendedor: true }, orderBy: { nombre: "asc" } }),
     db.venta.groupBy({
       by: ["vendedorId"],
+      where: { archivedAt: null },
       _count: { _all: true },
       _sum: { precioVentaUsdCents: true, comisionVentaUsdCents: true },
     }),

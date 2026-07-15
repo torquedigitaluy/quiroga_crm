@@ -201,3 +201,29 @@ export async function createVentaAccesorio(formData: FormData) {
   revalidatePath("/stock");
   redirect("/stock?tab=accesorios");
 }
+
+export async function archiveVenta(id: string) {
+  await assertCan("ventas.edit");
+  const venta = await db.venta.update({ where: { id }, data: { archivedAt: new Date() }, include: { vehiculo: true } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Venta",
+    entidadId: id,
+    descripcion: `Archivó la venta de ${venta.vehiculo.marca} ${venta.vehiculo.modelo}`,
+  });
+  revalidatePath("/ventas");
+  revalidatePath("/ventas/planilla");
+}
+
+export async function restoreVenta(id: string) {
+  await assertCan("ventas.edit");
+  const venta = await db.venta.update({ where: { id }, data: { archivedAt: null }, include: { vehiculo: true } });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Venta",
+    entidadId: id,
+    descripcion: `Restauró la venta de ${venta.vehiculo.marca} ${venta.vehiculo.modelo}`,
+  });
+  revalidatePath("/ventas");
+  revalidatePath("/ventas/planilla");
+}

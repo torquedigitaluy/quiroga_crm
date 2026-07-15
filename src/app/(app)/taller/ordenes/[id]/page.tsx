@@ -10,6 +10,7 @@ import { ChecklistEditor } from "@/components/taller/ChecklistEditor";
 import { RepuestosTable } from "@/components/taller/RepuestosTable";
 import { GastosOrdenTable } from "@/components/taller/GastosOrdenTable";
 import { ImagenesGallery } from "@/components/taller/ImagenesGallery";
+import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
 import {
   updateOrdenTaller,
   addRepuesto,
@@ -21,6 +22,7 @@ import {
   deleteChecklistItem,
   addImagenes,
   deleteImagen,
+  archiveOrdenTaller,
 } from "../../actions";
 
 export default async function OrdenTallerDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -78,6 +80,13 @@ export default async function OrdenTallerDetallePage({ params }: { params: Promi
                 PDF
               </a>
             </Button>
+            {editable && (
+              <ConfirmArchiveButton
+                onConfirm={archiveOrdenTaller.bind(null, orden.id)}
+                title="¿Eliminar esta orden de trabajo?"
+                description="Va a dejar de aparecer en Taller, pero queda guardada en el histórico y se puede restaurar en cualquier momento."
+              />
+            )}
           </div>
         </div>
       </div>

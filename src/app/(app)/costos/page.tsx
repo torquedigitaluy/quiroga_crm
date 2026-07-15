@@ -11,7 +11,7 @@ export default async function CostosIndexPage() {
 
   const [vehiculos, config] = await Promise.all([
     db.vehiculo.findMany({
-      where: { esVehiculo: true },
+      where: { esVehiculo: true, archivedAt: null },
       include: { costeo: { include: { gastos: true } } },
       orderBy: { fechaIngreso: "desc" },
     }),

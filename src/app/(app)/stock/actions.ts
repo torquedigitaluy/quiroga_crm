@@ -114,15 +114,30 @@ export async function updateVehiculo(id: string, formData: FormData) {
 export async function deleteVehiculo(id: string) {
   await assertCan("stock.delete");
   const vehiculo = await db.vehiculo.findUnique({ where: { id } });
-  await db.vehiculo.delete({ where: { id } });
+  await db.vehiculo.update({ where: { id }, data: { archivedAt: new Date() } });
   await logAudit({
     accion: "ELIMINAR",
     entidad: "Vehículo",
     entidadId: id,
     descripcion: vehiculo
-      ? `Eliminó el vehículo ${vehiculo.marca} ${vehiculo.modelo}${vehiculo.matricula ? ` (${vehiculo.matricula})` : ""}`
-      : `Eliminó un vehículo (${id})`,
+      ? `Archivó el vehículo ${vehiculo.marca} ${vehiculo.modelo}${vehiculo.matricula ? ` (${vehiculo.matricula})` : ""}`
+      : `Archivó un vehículo (${id})`,
   });
   revalidatePath("/stock");
   redirect("/stock");
+}
+
+export async function restoreVehiculo(id: string) {
+  await assertCan("stock.delete");
+  const vehiculo = await db.vehiculo.findUnique({ where: { id } });
+  await db.vehiculo.update({ where: { id }, data: { archivedAt: null } });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Vehículo",
+    entidadId: id,
+    descripcion: vehiculo
+      ? `Restauró el vehículo ${vehiculo.marca} ${vehiculo.modelo}${vehiculo.matricula ? ` (${vehiculo.matricula})` : ""}`
+      : `Restauró un vehículo (${id})`,
+  });
+  revalidatePath("/stock");
 }

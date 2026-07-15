@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
+import { logAudit } from "@/lib/audit";
 import { financiacionPropiaSchema, deudaClienteSchema, conformeSchema } from "./schema";
 
 function addMonths(date: Date, months: number): Date {
@@ -167,4 +168,28 @@ export async function generateConforme(financiacionPropiaId: string, cuotaId: st
 
   revalidatePath(`/propia/${financiacionPropiaId}`);
   redirect(`/propia/conformes/${conforme.id}`);
+}
+
+export async function archiveFinanciacionPropia(id: string) {
+  await assertCan("propia.edit");
+  const fin = await db.financiacionPropia.update({ where: { id }, data: { archivedAt: new Date() } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Financiación propia",
+    entidadId: id,
+    descripcion: `Archivó la financiación propia de ${fin.nombre}`,
+  });
+  revalidatePath("/propia");
+}
+
+export async function restoreFinanciacionPropia(id: string) {
+  await assertCan("propia.edit");
+  const fin = await db.financiacionPropia.update({ where: { id }, data: { archivedAt: null } });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Financiación propia",
+    entidadId: id,
+    descripcion: `Restauró la financiación propia de ${fin.nombre}`,
+  });
+  revalidatePath("/propia");
 }

@@ -27,19 +27,23 @@ export default async function DashboardPage() {
   const esSoloCostosPropios =
     !puedeVerFinanzasDeLaEmpresa && !esSoloTaller && !perms.has("ventas.view_own") && perms.has("costos.view_own");
 
-  const vehiculos = await db.vehiculo.groupBy({ by: ["estado"], where: { esVehiculo: true }, _count: true });
+  const vehiculos = await db.vehiculo.groupBy({
+    by: ["estado"],
+    where: { esVehiculo: true, archivedAt: null },
+    _count: true,
+  });
   const stockPorEstado = { APRONTANDO: 0, SENADO: 0, PUBLICADO: 0, VENDIDO: 0 } as Record<string, number>;
   for (const v of vehiculos) stockPorEstado[v.estado] = v._count;
 
   // Detalle para los popups de las cards de Taller y Señados.
   const [tallerVehiculos, senadoVehiculos] = await Promise.all([
     db.vehiculo.findMany({
-      where: { esVehiculo: true, estado: "APRONTANDO" },
+      where: { esVehiculo: true, estado: "APRONTANDO", archivedAt: null },
       include: { ordenesTaller: { orderBy: { fechaIngreso: "desc" }, take: 1 } },
       orderBy: { fechaIngreso: "desc" },
     }),
     db.vehiculo.findMany({
-      where: { esVehiculo: true, estado: "SENADO" },
+      where: { esVehiculo: true, estado: "SENADO", archivedAt: null },
       include: { ventas: { orderBy: { createdAt: "desc" }, take: 1, include: { cliente: true } } },
       orderBy: { updatedAt: "desc" },
     }),
@@ -266,7 +270,7 @@ async function DashboardTaller() {
 
 async function DashboardCostosPropios({ responsableId }: { responsableId: string }) {
   const vehiculos = await db.vehiculo.findMany({
-    where: { responsableId, esVehiculo: true },
+    where: { responsableId, esVehiculo: true, archivedAt: null },
     include: { costeo: true },
   });
 
