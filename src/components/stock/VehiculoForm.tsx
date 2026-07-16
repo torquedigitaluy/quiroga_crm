@@ -28,6 +28,7 @@ export type VehiculoFormData = {
   transmision?: string | null;
   matricula?: string | null;
   padron?: string | null;
+  chasis?: string | null;
   segundaLlave?: boolean;
   ubicacionLibreta?: string | null;
   comentarios?: string | null;
@@ -104,6 +105,7 @@ export function VehiculoForm({
         <Field label="Transmisión" name="transmision" defaultValue={initial?.transmision ?? ""} />
         <Field label="Matrícula" name="matricula" defaultValue={initial?.matricula ?? ""} />
         <Field label="Padrón" name="padron" defaultValue={initial?.padron ?? ""} />
+        <Field label="Chasis" name="chasis" defaultValue={initial?.chasis ?? ""} />
         <div className="flex flex-col gap-1.5">
           <Label>Ubicación de la libreta</Label>
           <Select name="ubicacionLibreta" defaultValue={initial?.ubicacionLibreta ?? undefined}>

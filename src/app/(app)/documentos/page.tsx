@@ -1,4 +1,5 @@
-import { FileDown } from "lucide-react";
+import Link from "next/link";
+import { FileDown, Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,11 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 export default async function DocumentosPage() {
   await assertCan("docs.generate");
 
-  const [ventas, conformes] = await Promise.all([
-    db.venta.findMany({
+  const [promesas, conformes] = await Promise.all([
+    db.promesaCompraventa.findMany({
       where: { archivedAt: null },
-      include: { vehiculo: true, cliente: true },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 30,
     }),
     db.conforme.findMany({
       include: { financiacionPropia: true, cuota: true },
@@ -29,27 +29,42 @@ export default async function DocumentosPage() {
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Promesa de Compraventa (por venta)</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Promesa de Compra-Venta</h2>
+          <Button asChild>
+            <Link href="/documentos/promesa/nueva">
+              <Plus className="h-4 w-4" />
+              Nueva promesa
+            </Link>
+          </Button>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>N°</TableHead>
               <TableHead>Vehículo</TableHead>
               <TableHead>Cliente</TableHead>
-              <TableHead>Fecha entrega</TableHead>
-              <TableHead className="w-10" />
+              <TableHead>Fecha</TableHead>
+              <TableHead className="w-32" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ventas.map((v) => (
-              <TableRow key={v.id}>
+            {promesas.map((p) => (
+              <TableRow key={p.id}>
+                <TableCell>{p.numero}</TableCell>
                 <TableCell className="font-medium text-foreground">
-                  {v.vehiculo.marca} {v.vehiculo.modelo}
+                  <Link href={`/documentos/promesa/${p.id}`} className="hover:text-brand">
+                    {p.vehMarca} {p.vehModelo}
+                  </Link>
                 </TableCell>
-                <TableCell>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido ?? ""}` : "—"}</TableCell>
-                <TableCell>{v.fechaEntrega ? new Date(v.fechaEntrega).toLocaleDateString("es-UY") : "—"}</TableCell>
-                <TableCell>
+                <TableCell>{[p.clienteNombre, p.clienteApellido].filter(Boolean).join(" ") || "—"}</TableCell>
+                <TableCell>{new Date(p.fecha).toLocaleDateString("es-UY")}</TableCell>
+                <TableCell className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" asChild>
-                    <a href={`/api/documentos/promesa/${v.id}`} target="_blank" rel="noopener noreferrer">
+                    <Link href={`/documentos/promesa/${p.id}`}>Editar</Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`/api/documentos/promesa/${p.id}`} target="_blank" rel="noopener noreferrer">
                       <FileDown className="h-3.5 w-3.5" />
                       PDF
                     </a>
@@ -57,10 +72,10 @@ export default async function DocumentosPage() {
                 </TableCell>
               </TableRow>
             ))}
-            {ventas.length === 0 && (
+            {promesas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                  No hay ventas registradas.
+                <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                  No hay promesas de compraventa generadas todavía.
                 </TableCell>
               </TableRow>
             )}

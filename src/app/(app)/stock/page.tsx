@@ -59,9 +59,12 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         ...(sp.q
           ? {
               OR: [
-                { marca: { contains: sp.q } },
-                { modelo: { contains: sp.q } },
-                { matricula: { contains: sp.q } },
+                { marca: { contains: sp.q, mode: "insensitive" } },
+                { modelo: { contains: sp.q, mode: "insensitive" } },
+                { matricula: { contains: sp.q, mode: "insensitive" } },
+                { motor: { contains: sp.q, mode: "insensitive" } },
+                { chasis: { contains: sp.q, mode: "insensitive" } },
+                { ventas: { some: { cliente: { OR: [{ nombre: { contains: sp.q, mode: "insensitive" } }, { apellido: { contains: sp.q, mode: "insensitive" } }] } } } },
               ],
             }
           : {}),
@@ -91,7 +94,12 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
         <TabsContent value="vehiculos" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <form className="flex flex-wrap items-center gap-2">
-              <Input name="q" placeholder="Buscar por marca, modelo o matrícula…" defaultValue={sp.q} className="w-64" />
+              <Input
+                name="q"
+                placeholder="Buscar por matrícula, marca/modelo, cliente, motor o chasis…"
+                defaultValue={sp.q}
+                className="w-72"
+              />
               <StockSortSelect defaultValue={`${sortInfo.key}_${sortInfo.dir}`} />
               <Button type="submit" variant="outline">
                 Buscar

@@ -19,6 +19,7 @@ const VEHICLE_FIELDS = [
   "transmision",
   "matricula",
   "padron",
+  "chasis",
   "segundaLlave",
   "ubicacionLibreta",
   "comentarios",

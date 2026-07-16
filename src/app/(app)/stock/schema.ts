@@ -17,6 +17,7 @@ export const vehiculoSchema = z.object({
   transmision: z.string().trim().optional().nullable(),
   matricula: z.string().trim().optional().nullable(),
   padron: z.string().trim().optional().nullable(),
+  chasis: z.string().trim().optional().nullable(),
   segundaLlave: z.coerce.boolean().optional(),
   ubicacionLibreta: z.string().trim().optional().nullable(),
   comentarios: z.string().trim().optional().nullable(),

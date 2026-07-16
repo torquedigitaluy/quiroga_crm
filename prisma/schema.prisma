@@ -193,6 +193,7 @@ model User {
   ordenesComoTecnico   OrdenTaller[]        @relation("TecnicoResponsableOrden")
   ordenesComoRevisor   OrdenTaller[]        @relation("RevisorOrden")
   ordenesCreadas       OrdenTaller[]        @relation("CreadorOrden")
+  promesasCreadas      PromesaCompraventa[] @relation("CreadorPromesa")
 }
 
 model PasswordResetToken {
@@ -293,6 +294,7 @@ model Vehiculo {
   precioVentaUsdCents Int?
   matricula           String?
   padron              String?
+  chasis              String?
   patenteCuotaCents   Int?
   patenteAnualCents   Int?
   propietario         String?
@@ -318,6 +320,7 @@ model Vehiculo {
   financiacionesPropia FinanciacionPropia[]
   deudasCliente        DeudaCliente[]
   ordenesTaller        OrdenTaller[]
+  promesas             PromesaCompraventa[]
 
   @@index([matricula])
   @@index([marca])
@@ -341,6 +344,7 @@ model Cliente {
   financiacionesTitulo FinanciacionTitulo[]
   financiacionesPropia FinanciacionPropia[]
   deudas               DeudaCliente[]
+  promesas             PromesaCompraventa[]
 
   @@index([nombre])
   @@index([ci])
@@ -398,6 +402,8 @@ model Venta {
   archivedAt             DateTime?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
+
+  promesas PromesaCompraventa[]
 
   @@index([fechaEntrega])
   @@index([vendedorId])
@@ -681,6 +687,91 @@ model DocumentoTemplate {
   contenidoBase String
   activo        Boolean       @default(true)
   updatedAt     DateTime      @updatedAt
+}
+
+// ---------- Promesa de Compraventa (réplica exacta del formulario en papel) ----------
+
+model PromesaCompraventa {
+  id     String @id @default(cuid())
+  numero Int    @unique @default(autoincrement())
+
+  ventaId    String?
+  venta      Venta?   @relation(fields: [ventaId], references: [id])
+  vehiculoId String?
+  vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  clienteId  String?
+  cliente    Cliente? @relation(fields: [clienteId], references: [id])
+
+  fecha      DateTime @default(now())
+  vendedores String?
+
+  // Vehículo
+  vehMarca     String?
+  vehModelo    String?
+  vehTipo      String?
+  vehColor     String?
+  vehAnio      Int?
+  vehMatricula String?
+  vehMotor     String?
+  vehChasis    String?
+
+  // Cliente
+  clienteNombre      String?
+  clienteApellido    String?
+  clienteCi          String?
+  clienteDomicilio   String?
+  clienteCiudad      String?
+  clienteContacto    String?
+  clienteEstadoCivil String?
+  clienteNombre2     String?
+  clienteMail        String?
+
+  // Condiciones de pago
+  financia    Boolean @default(false)
+  financiaCon String?
+
+  senaUsdCents               Int?
+  pagoRetiroUnidadUsdCents   Int?
+  capitalFinanciadoUsdCents  Int?
+  conformesUsdCents          Int?
+  valorTomaAutoUsdCents      Int?
+  totalUsdCents              Int?
+
+  // Documentación
+  costoTitulosUsdCents         Int?
+  cartaPagoUsdCents             Int?
+  entregaCuentaTitulosUsdCents Int?
+
+  // Seguro
+  seguro       Boolean @default(false)
+  aseguradora  String?
+  cobertura    String?
+
+  // Cesión de derechos
+  cesionDerechos  Boolean @default(false)
+  cesionANombreDe String?
+
+  observaciones String?
+
+  // Vehículo que se permuta
+  permutaMarca     String?
+  permutaModelo    String?
+  permutaTipo      String?
+  permutaColor     String?
+  permutaLlaves    String?
+  permutaAnio      Int?
+  permutaMatricula String?
+  permutaMotor     String?
+  permutaChasis    String?
+
+  creadoPorId String?
+  creadoPor   User?   @relation("CreadorPromesa", fields: [creadoPorId], references: [id])
+  archivedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([vehiculoId])
 }
 
 model OrdenTaller {

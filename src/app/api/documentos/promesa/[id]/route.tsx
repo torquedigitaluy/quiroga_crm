@@ -7,35 +7,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   await assertCan("docs.generate");
   const { id } = await params;
 
-  const venta = await db.venta.findUnique({
-    where: { id },
-    include: { vehiculo: true, cliente: true },
-  });
+  const promesa = await db.promesaCompraventa.findUnique({ where: { id } });
 
-  if (!venta) {
-    return new Response("Venta no encontrada", { status: 404 });
+  if (!promesa) {
+    return new Response("Promesa de compraventa no encontrada", { status: 404 });
   }
 
-  const buffer = await renderToBuffer(
-    <PromesaPDF
-      data={{
-        clienteNombre: venta.cliente ? `${venta.cliente.nombre} ${venta.cliente.apellido ?? ""}`.trim() : "—",
-        clienteCi: venta.cliente?.ci ?? null,
-        vehiculoLabel: `${venta.vehiculo.marca} ${venta.vehiculo.modelo} ${venta.vehiculo.version ?? ""}`.trim(),
-        matricula: venta.vehiculo.matricula,
-        padron: venta.vehiculo.padron,
-        precioVentaUsdCents: venta.precioVentaUsdCents,
-        senaUsdCents: venta.senaUsdCents,
-        fechaSena: venta.fechaSena,
-        fechaEntrega: venta.fechaEntrega,
-      }}
-    />,
-  );
+  const buffer = await renderToBuffer(<PromesaPDF data={promesa} />);
 
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="promesa-${id}.pdf"`,
+      "Content-Disposition": `inline; filename="promesa-${promesa.numero}.pdf"`,
     },
   });
 }
