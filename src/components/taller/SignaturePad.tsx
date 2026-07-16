@@ -28,10 +28,16 @@ export function SignaturePad({
     img.src = initialDataUrl;
   }, [initialDataUrl]);
 
+  // El canvas tiene una resolución de dibujo fija (500x160) pero se muestra
+  // escalado al ancho real del contenedor (w-full) — sobre todo en celular,
+  // donde suele ser bastante más angosto. Sin este reescalado el trazo
+  // queda desplazado respecto de donde toca el dedo.
   function getPoint(e: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {

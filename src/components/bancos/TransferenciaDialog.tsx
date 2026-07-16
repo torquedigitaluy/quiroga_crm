@@ -59,7 +59,7 @@ export function TransferenciaDialog({
             <Label>Fecha</Label>
             <Input name="fecha" type="date" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>Cuenta origen</Label>
               <Select name="cuentaOrigenId" required>
@@ -91,7 +91,7 @@ export function TransferenciaDialog({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>Monto $ (pesos)</Label>
               <Input name="montoPesosCents" type="number" step="0.01" defaultValue={0} />
