@@ -148,6 +148,22 @@ enum EstadoOrdenTaller {
   ESPERANDO_APROBACION
   FINALIZADA
   ENTREGADA
+  EN_DIAGNOSTICO
+  EN_REPARACION
+}
+
+enum PrioridadOrden {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum CategoriaImagenOrden {
+  INGRESO
+  REPARACION
+  FINALIZADO
+  OTRA
 }
 
 enum FormaPagoRecibo {
@@ -174,6 +190,9 @@ model User {
   vehiculosResponsable Vehiculo[]           @relation("VehiculoResponsable")
   passwordResetTokens  PasswordResetToken[]
   loginVerifications   LoginVerification[]
+  ordenesComoTecnico   OrdenTaller[]        @relation("TecnicoResponsableOrden")
+  ordenesComoRevisor   OrdenTaller[]        @relation("RevisorOrden")
+  ordenesCreadas       OrdenTaller[]        @relation("CreadorOrden")
 }
 
 model PasswordResetToken {
@@ -666,10 +685,28 @@ model DocumentoTemplate {
 
 model OrdenTaller {
   id                 String             @id @default(cuid())
+  numeroOrden        Int                @unique @default(autoincrement())
+  prioridad          PrioridadOrden     @default(MEDIA)
   vehiculoId         String?
   vehiculo           Vehiculo?          @relation(fields: [vehiculoId], references: [id])
   vehiculoExterno    String?
+  // Snapshot de los datos del vehículo al momento de la orden (independiente
+  // del stock: el km/chasis pueden diferir o la orden puede no estar ligada
+  // a ningún vehículo de stock).
+  vehMarca           String?
+  vehModelo          String?
+  vehVersion         String?
+  vehAnio            Int?
+  vehColor           String?
+  vehMatricula       String?
+  vehKm              Int?
+  vehChasis          String?
+  clienteNombre      String?
+  clienteTelefono    String?
+  clienteDireccion   String?
   tipoServicio       TipoServicioTaller @default(MANTENIMIENTO)
+  tiposServicio      String[]           @default([])
+  tipoServicioOtro   String?
   fechaIngreso       DateTime
   fechaFinalizacion  DateTime?
   problema           String
@@ -677,6 +714,17 @@ model OrdenTaller {
   observaciones      String?
   manoDeObraCents    Int                @default(0)
   responsable        String?
+  tecnicoResponsableId     String?
+  tecnicoResponsable       User?      @relation("TecnicoResponsableOrden", fields: [tecnicoResponsableId], references: [id])
+  tecnicoResponsableFecha  DateTime?
+  revisadoPorId            String?
+  revisadoPor              User?      @relation("RevisorOrden", fields: [revisadoPorId], references: [id])
+  revisadoAprobado         Boolean?
+  revisadoAt               DateTime?
+  clienteFirmaDataUrl      String?
+  clienteFirmaFecha        DateTime?
+  creadoPorId              String?
+  creadoPor                User?      @relation("CreadorOrden", fields: [creadoPorId], references: [id])
   estado             EstadoOrdenTaller  @default(PENDIENTE)
   archivedAt         DateTime?
   createdAt          DateTime           @default(now())
@@ -722,11 +770,12 @@ model OrdenTallerChecklistItem {
 }
 
 model OrdenTallerImagen {
-  id            String      @id @default(cuid())
+  id            String                @id @default(cuid())
   ordenTallerId String
-  ordenTaller   OrdenTaller @relation(fields: [ordenTallerId], references: [id], onDelete: Cascade)
+  ordenTaller   OrdenTaller           @relation(fields: [ordenTallerId], references: [id], onDelete: Cascade)
+  categoria     CategoriaImagenOrden  @default(OTRA)
   dataUrl       String
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime              @default(now())
 }
 
 // ---------- Auditoría ----------

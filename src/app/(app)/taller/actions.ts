@@ -19,8 +19,20 @@ async function filesToDataUrls(formData: FormData, field: string): Promise<strin
   return urls;
 }
 
+function dateOrNull(value: FormDataEntryValue | null): Date | null {
+  const str = String(value ?? "").trim();
+  return str ? new Date(str) : null;
+}
+
+function intOrNull(value: FormDataEntryValue | null): number | null {
+  const str = String(value ?? "").trim();
+  if (!str) return null;
+  const n = parseInt(str, 10);
+  return isNaN(n) ? null : n;
+}
+
 export async function createOrdenTaller(formData: FormData) {
-  await assertCan("taller.edit");
+  const user = await assertCan("taller.edit");
 
   const origenVehiculo = String(formData.get("origenVehiculo") ?? "stock");
   const vehiculoId = origenVehiculo === "stock" ? String(formData.get("vehiculoId") ?? "").trim() : "";
@@ -30,29 +42,45 @@ export async function createOrdenTaller(formData: FormData) {
     throw new Error("Elegí un vehículo de stock o describí el vehículo externo");
   }
 
-  const tipoServicio = String(formData.get("tipoServicio") ?? "MANTENIMIENTO") as
-    | "MANTENIMIENTO"
-    | "DIAGNOSTICO"
-    | "REPARACION"
-    | "OTRO";
+  const prioridad = String(formData.get("prioridad") ?? "MEDIA") as "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+  const tiposServicio = formData.getAll("tiposServicio").map(String);
+  const tipoServicioOtro = String(formData.get("tipoServicioOtro") ?? "").trim();
   const fechaIngreso = String(formData.get("fechaIngreso") ?? "");
   const responsable = String(formData.get("responsable") ?? "").trim();
+  const tecnicoResponsableId = String(formData.get("tecnicoResponsableId") ?? "").trim();
   const problema = String(formData.get("problema") ?? "").trim();
 
   if (!problema) throw new Error("Describí el problema o lo que tiene el vehículo");
+  if (tiposServicio.length === 0) throw new Error("Elegí al menos un tipo de servicio");
 
-  const imagenes = await filesToDataUrls(formData, "imagenes");
+  const imagenesIngreso = await filesToDataUrls(formData, "imagenesIngreso");
 
   const orden = await db.ordenTaller.create({
     data: {
       vehiculoId: vehiculoId || null,
       vehiculoExterno: vehiculoExterno || null,
-      tipoServicio,
+      vehMarca: String(formData.get("vehMarca") ?? "").trim() || null,
+      vehModelo: String(formData.get("vehModelo") ?? "").trim() || null,
+      vehVersion: String(formData.get("vehVersion") ?? "").trim() || null,
+      vehAnio: intOrNull(formData.get("vehAnio")),
+      vehColor: String(formData.get("vehColor") ?? "").trim() || null,
+      vehMatricula: String(formData.get("vehMatricula") ?? "").trim() || null,
+      vehKm: intOrNull(formData.get("vehKm")),
+      vehChasis: String(formData.get("vehChasis") ?? "").trim() || null,
+      clienteNombre: String(formData.get("clienteNombre") ?? "").trim() || null,
+      clienteTelefono: String(formData.get("clienteTelefono") ?? "").trim() || null,
+      clienteDireccion: String(formData.get("clienteDireccion") ?? "").trim() || null,
+      prioridad,
+      tiposServicio,
+      tipoServicioOtro: tipoServicioOtro || null,
       fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : new Date(),
       problema,
       responsable: responsable || null,
+      tecnicoResponsableId: tecnicoResponsableId || null,
+      tecnicoResponsableFecha: tecnicoResponsableId ? new Date() : null,
+      creadoPorId: user.id,
       checklist: { create: CHECKLIST_DEFAULT.map((tarea, i) => ({ tarea, orden: i })) },
-      imagenes: { create: imagenes.map((dataUrl) => ({ dataUrl })) },
+      imagenes: { create: imagenesIngreso.map((dataUrl) => ({ dataUrl, categoria: "INGRESO" as const })) },
     },
   });
 
@@ -60,7 +88,7 @@ export async function createOrdenTaller(formData: FormData) {
     accion: "CREAR",
     entidad: "Orden de taller",
     entidadId: orden.id,
-    descripcion: `Creó la orden de taller "${problema}"`,
+    descripcion: `Creó la orden de taller N° ${orden.numeroOrden} ("${problema}")`,
   });
 
   revalidatePath("/taller");
@@ -70,40 +98,60 @@ export async function createOrdenTaller(formData: FormData) {
 export async function updateOrdenTaller(ordenId: string, formData: FormData) {
   await assertCan("taller.edit");
 
-  const tipoServicio = String(formData.get("tipoServicio") ?? "MANTENIMIENTO") as
-    | "MANTENIMIENTO"
-    | "DIAGNOSTICO"
-    | "REPARACION"
-    | "OTRO";
+  const prioridad = String(formData.get("prioridad") ?? "MEDIA") as "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+  const tiposServicio = formData.getAll("tiposServicio").map(String);
+  const tipoServicioOtro = String(formData.get("tipoServicioOtro") ?? "").trim();
   const estado = String(formData.get("estado") ?? "PENDIENTE") as
     | "PENDIENTE"
     | "EN_PROCESO"
     | "ESPERANDO_REPUESTOS"
     | "ESPERANDO_APROBACION"
     | "FINALIZADA"
-    | "ENTREGADA";
+    | "ENTREGADA"
+    | "EN_DIAGNOSTICO"
+    | "EN_REPARACION";
   const fechaIngreso = String(formData.get("fechaIngreso") ?? "");
   const fechaFinalizacion = String(formData.get("fechaFinalizacion") ?? "");
   const responsable = String(formData.get("responsable") ?? "").trim();
+  const tecnicoResponsableId = String(formData.get("tecnicoResponsableId") ?? "").trim();
   const problema = String(formData.get("problema") ?? "").trim();
   const trabajosRealizados = String(formData.get("trabajosRealizados") ?? "").trim();
   const observaciones = String(formData.get("observaciones") ?? "").trim();
   const manoDeObra = parseFloat(String(formData.get("manoDeObraCents") ?? "0")) || 0;
 
   if (!problema) throw new Error("Describí el problema o lo que tiene el vehículo");
+  if (tiposServicio.length === 0) throw new Error("Elegí al menos un tipo de servicio");
+
+  const previa = await db.ordenTaller.findUnique({ where: { id: ordenId }, select: { tecnicoResponsableId: true } });
 
   await db.ordenTaller.update({
     where: { id: ordenId },
     data: {
-      tipoServicio,
+      prioridad,
+      tiposServicio,
+      tipoServicioOtro: tipoServicioOtro || null,
       estado,
       fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : undefined,
       fechaFinalizacion: fechaFinalizacion ? new Date(fechaFinalizacion) : null,
       responsable: responsable || null,
+      tecnicoResponsableId: tecnicoResponsableId || null,
+      tecnicoResponsableFecha:
+        tecnicoResponsableId && tecnicoResponsableId !== previa?.tecnicoResponsableId ? new Date() : undefined,
       problema,
       trabajosRealizados: trabajosRealizados || null,
       observaciones: observaciones || null,
       manoDeObraCents: unitsToCents(manoDeObra),
+      vehMarca: String(formData.get("vehMarca") ?? "").trim() || null,
+      vehModelo: String(formData.get("vehModelo") ?? "").trim() || null,
+      vehVersion: String(formData.get("vehVersion") ?? "").trim() || null,
+      vehAnio: intOrNull(formData.get("vehAnio")),
+      vehColor: String(formData.get("vehColor") ?? "").trim() || null,
+      vehMatricula: String(formData.get("vehMatricula") ?? "").trim() || null,
+      vehKm: intOrNull(formData.get("vehKm")),
+      vehChasis: String(formData.get("vehChasis") ?? "").trim() || null,
+      clienteNombre: String(formData.get("clienteNombre") ?? "").trim() || null,
+      clienteTelefono: String(formData.get("clienteTelefono") ?? "").trim() || null,
+      clienteDireccion: String(formData.get("clienteDireccion") ?? "").trim() || null,
     },
   });
 
@@ -116,6 +164,47 @@ export async function updateOrdenTaller(ordenId: string, formData: FormData) {
 
   revalidatePath(`/taller/ordenes/${ordenId}`);
   revalidatePath("/taller");
+}
+
+export async function setControlCalidad(ordenId: string, formData: FormData) {
+  const user = await assertCan("taller.control_calidad");
+
+  const aprobado = String(formData.get("revisadoAprobado") ?? "") === "true";
+
+  await db.ordenTaller.update({
+    where: { id: ordenId },
+    data: { revisadoPorId: user.id, revisadoAprobado: aprobado, revisadoAt: new Date() },
+  });
+
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Orden de taller",
+    entidadId: ordenId,
+    descripcion: `Completó el control de calidad (${aprobado ? "aprobado" : "no aprobado"})`,
+  });
+
+  revalidatePath(`/taller/ordenes/${ordenId}`);
+}
+
+export async function saveFirmaCliente(ordenId: string, formData: FormData) {
+  await assertCan("taller.edit");
+
+  const firma = String(formData.get("firma") ?? "");
+  if (!firma) throw new Error("Falta la firma");
+
+  await db.ordenTaller.update({
+    where: { id: ordenId },
+    data: { clienteFirmaDataUrl: firma, clienteFirmaFecha: new Date() },
+  });
+
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Orden de taller",
+    entidadId: ordenId,
+    descripcion: "Registró la conformidad firmada del cliente",
+  });
+
+  revalidatePath(`/taller/ordenes/${ordenId}`);
 }
 
 export async function addRepuesto(ordenId: string, formData: FormData) {
@@ -187,10 +276,11 @@ export async function deleteChecklistItem(ordenId: string, itemId: string) {
 
 export async function addImagenes(ordenId: string, formData: FormData) {
   await assertCan("taller.edit");
+  const categoria = String(formData.get("categoria") ?? "OTRA") as "INGRESO" | "REPARACION" | "FINALIZADO" | "OTRA";
   const imagenes = await filesToDataUrls(formData, "imagenes");
   if (imagenes.length === 0) throw new Error("Elegí al menos una imagen");
   await db.ordenTallerImagen.createMany({
-    data: imagenes.map((dataUrl) => ({ ordenTallerId: ordenId, dataUrl })),
+    data: imagenes.map((dataUrl) => ({ ordenTallerId: ordenId, dataUrl, categoria })),
   });
   revalidatePath(`/taller/ordenes/${ordenId}`);
 }

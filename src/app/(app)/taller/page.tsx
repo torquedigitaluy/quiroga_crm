@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Plus, FileDown } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan, getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
+import { assertCanAny, getEffectivePermissions } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { computeSaldos } from "@/lib/saldos";
 import { Button } from "@/components/ui/button";
@@ -13,17 +13,20 @@ import { RestoreButton } from "@/components/ui/RestoreButton";
 import { createGastoTaller, restoreOrdenTaller } from "./actions";
 
 export default async function TallerPage({ searchParams }: { searchParams: Promise<{ archivadas?: string }> }) {
-  const user = await assertCan("taller.view");
+  const user = await assertCanAny(["taller.view", "taller.view_ordenes"]);
   const perms = await getEffectivePermissions(user.id);
   const editable = perms.has("taller.edit");
+  const soloLectura = !perms.has("taller.view") && perms.has("taller.view_ordenes");
   const { archivadas } = await searchParams;
-  const verArchivadas = archivadas === "1";
+  const verArchivadas = archivadas === "1" && !soloLectura;
 
   const [cuenta, ordenes] = await Promise.all([
-    db.cuentaBancaria.findUnique({
-      where: { nombre: "GASTOS_TALLER" },
-      include: { movimientos: { orderBy: { fecha: "desc" } } },
-    }),
+    soloLectura
+      ? Promise.resolve(null)
+      : db.cuentaBancaria.findUnique({
+          where: { nombre: "GASTOS_TALLER" },
+          include: { movimientos: { orderBy: { fecha: "desc" } } },
+        }),
     db.ordenTaller.findMany({
       where: { archivedAt: verArchivadas ? { not: null } : null },
       include: { vehiculo: true },
@@ -51,14 +54,14 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
           {verArchivadas ? "Órdenes de trabajo eliminadas" : "Órdenes de trabajo"}
         </h2>
         <div className="flex items-center gap-2">
-          {editable && (
+          {editable && !soloLectura && (
             <Button variant="outline" asChild>
               <Link href={verArchivadas ? "/taller" : "/taller?archivadas=1"}>
                 {verArchivadas ? "Ver activas" : "Ver eliminadas"}
               </Link>
             </Button>
           )}
-          {!verArchivadas && (
+          {!verArchivadas && !soloLectura && (
             <Button asChild>
               <Link href="/taller/ordenes/nueva">
                 <Plus className="h-4 w-4" />
@@ -123,59 +126,63 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
         </TableBody>
       </Table>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Gastos de Taller</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Gastado en pesos</span>
-            <span className="text-lg font-semibold text-foreground">{formatCents(totalGastadoPesos, "UYU")}</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Gastado en USD</span>
-            <span className="text-lg font-semibold text-foreground">{formatCents(totalGastadoUsd, "USD")}</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Saldo pesos</span>
-            <span className="text-lg font-semibold text-foreground">{formatCents(saldo.saldoPesosCents, "UYU")}</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Saldo USD</span>
-            <span className="text-lg font-semibold text-foreground">{formatCents(saldo.saldoUsdCents, "USD")}</span>
-          </div>
-        </CardContent>
-      </Card>
+      {!soloLectura && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Gastos de Taller</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Gastado en pesos</span>
+                <span className="text-lg font-semibold text-foreground">{formatCents(totalGastadoPesos, "UYU")}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Gastado en USD</span>
+                <span className="text-lg font-semibold text-foreground">{formatCents(totalGastadoUsd, "USD")}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Saldo pesos</span>
+                <span className="text-lg font-semibold text-foreground">{formatCents(saldo.saldoPesosCents, "UYU")}</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Saldo USD</span>
+                <span className="text-lg font-semibold text-foreground">{formatCents(saldo.saldoUsdCents, "USD")}</span>
+              </div>
+            </CardContent>
+          </Card>
 
-      {editable && <GastoTallerForm action={createGastoTaller} />}
+          {editable && <GastoTallerForm action={createGastoTaller} />}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Descripción</TableHead>
-            <TableHead>Monto $</TableHead>
-            <TableHead>Monto USD</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {movimientos.map((m) => (
-            <TableRow key={m.id}>
-              <TableCell>{new Date(m.fecha).toLocaleDateString("es-UY")}</TableCell>
-              <TableCell className="font-medium text-foreground">{m.detalle}</TableCell>
-              <TableCell>{m.montoPesosCents ? formatCents(m.montoPesosCents, "UYU") : "—"}</TableCell>
-              <TableCell>{m.montoUsdCents ? formatCents(m.montoUsdCents, "USD") : "—"}</TableCell>
-            </TableRow>
-          ))}
-          {movimientos.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                No hay gastos de taller registrados.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Monto $</TableHead>
+                <TableHead>Monto USD</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {movimientos.map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell>{new Date(m.fecha).toLocaleDateString("es-UY")}</TableCell>
+                  <TableCell className="font-medium text-foreground">{m.detalle}</TableCell>
+                  <TableCell>{m.montoPesosCents ? formatCents(m.montoPesosCents, "UYU") : "—"}</TableCell>
+                  <TableCell>{m.montoUsdCents ? formatCents(m.montoUsdCents, "USD") : "—"}</TableCell>
+                </TableRow>
+              ))}
+              {movimientos.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+                    No hay gastos de taller registrados.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </>
+      )}
     </div>
   );
 }

@@ -73,6 +73,8 @@ export const PERMISSIONS: PermissionDef[] = [
   // Taller
   { key: "taller.view", label: "Ver taller (gastos y órdenes de trabajo)", grupo: "Taller" },
   { key: "taller.edit", label: "Cargar gastos y órdenes de trabajo de taller", grupo: "Taller" },
+  { key: "taller.view_ordenes", label: "Ver solo el estado y observaciones de las órdenes (sin costos)", grupo: "Taller" },
+  { key: "taller.control_calidad", label: "Completar el control de calidad de una orden", grupo: "Taller" },
 
   // Dashboard
   { key: "dashboard.view", label: "Ver panel principal", grupo: "Dashboard" },
@@ -110,6 +112,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.move_location",
     "stock.edit_status",
     "ventas.view_own",
+    "taller.view_ordenes",
   ],
   CONTADORA: [
     "dashboard.view",
@@ -150,6 +153,9 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "docs.generate",
     "clientes.view",
     "audit.view",
+    "taller.view",
+    "taller.edit",
+    "taller.control_calidad",
   ],
   TALLER: [
     "dashboard.view",
