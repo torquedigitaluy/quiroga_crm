@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Ubicacion, EstadoVehiculo } from "@prisma/client";
 import { Plus, ArrowUpDown, Tag } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
@@ -13,7 +14,28 @@ import { Can } from "@/components/auth/Can";
 import { RestoreButton } from "@/components/ui/RestoreButton";
 import { restoreVehiculo } from "./actions";
 
-type SearchParams = { q?: string; sortCombo?: string; tab?: string };
+type SearchParams = {
+  q?: string;
+  sortCombo?: string;
+  tab?: string;
+  ubicacion?: string;
+  estado?: string;
+  marca?: string;
+  modelo?: string;
+};
+
+const UBICACION_OPTIONS: { value: string; label: string }[] = [
+  { value: "SAN_LUIS", label: "San Luis" },
+  { value: "ZONAMERICA", label: "Zonamérica" },
+  { value: "PROPIETARIO", label: "Propietario" },
+  { value: "TALLER", label: "Taller" },
+];
+
+const ESTADO_OPTIONS: { value: string; label: string }[] = [
+  { value: "PUBLICADO", label: "Publicado" },
+  { value: "SENADO", label: "Señado" },
+  { value: "APRONTANDO", label: "Taller" },
+];
 
 const SORT_FIELD_MAP: Record<string, string> = {
   fechaIngreso: "fechaIngreso",
@@ -31,6 +53,10 @@ function sortLink(sp: SearchParams, current: ReturnType<typeof parseSortCombo>, 
   const nextDir = current.key === key && current.dir === "asc" ? "desc" : "asc";
   const params = new URLSearchParams();
   if (sp.q) params.set("q", sp.q);
+  if (sp.ubicacion) params.set("ubicacion", sp.ubicacion);
+  if (sp.estado) params.set("estado", sp.estado);
+  if (sp.marca) params.set("marca", sp.marca);
+  if (sp.modelo) params.set("modelo", sp.modelo);
   params.set("sortCombo", `${key}_${nextDir}`);
   const active = current.key === key;
   return (
@@ -51,11 +77,15 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const puedeVender = await can("ventas.create");
   const puedeArchivar = await can("stock.delete");
 
-  const [vehiculos, accesorios, archivados] = await Promise.all([
+  const [vehiculos, accesorios, archivados, marcasRows, modelosRows] = await Promise.all([
     db.vehiculo.findMany({
       where: {
         esVehiculo: true,
         archivedAt: null,
+        ...(sp.ubicacion ? { ubicacion: sp.ubicacion as Ubicacion } : {}),
+        ...(sp.estado ? { estado: sp.estado as EstadoVehiculo } : {}),
+        ...(sp.marca ? { marca: sp.marca } : {}),
+        ...(sp.modelo ? { modelo: sp.modelo } : {}),
         ...(sp.q
           ? {
               OR: [
@@ -73,7 +103,23 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     }),
     db.vehiculo.findMany({ where: { esVehiculo: false, archivedAt: null }, orderBy: { marca: "asc" } }),
     db.vehiculo.findMany({ where: { archivedAt: { not: null } }, orderBy: { archivedAt: "desc" } }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, archivedAt: null },
+      distinct: ["marca"],
+      select: { marca: true },
+      orderBy: { marca: "asc" },
+    }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, archivedAt: null },
+      distinct: ["modelo"],
+      select: { modelo: true },
+      orderBy: { modelo: "asc" },
+    }),
   ]);
+
+  const marcas = marcasRows.map((m) => m.marca);
+  const modelos = modelosRows.map((m) => m.modelo);
+  const hayFiltros = Boolean(sp.ubicacion || sp.estado || sp.marca || sp.modelo);
 
   return (
     <div className="flex flex-col gap-6">
@@ -93,17 +139,70 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
 
         <TabsContent value="vehiculos" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <form className="flex flex-wrap items-center gap-2">
+            <form className="flex flex-wrap items-end gap-2">
               <Input
                 name="q"
                 placeholder="Buscar por matrícula, marca/modelo, cliente, motor o chasis…"
                 defaultValue={sp.q}
                 className="w-72"
               />
+              <select
+                name="ubicacion"
+                defaultValue={sp.ubicacion ?? ""}
+                className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="">Ubicación: todas</option>
+                {UBICACION_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="estado"
+                defaultValue={sp.estado ?? ""}
+                className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="">Estado: todos</option>
+                {ESTADO_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="marca"
+                defaultValue={sp.marca ?? ""}
+                className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="">Marca: todas</option>
+                {marcas.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="modelo"
+                defaultValue={sp.modelo ?? ""}
+                className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="">Modelo: todos</option>
+                {modelos.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
               <StockSortSelect defaultValue={`${sortInfo.key}_${sortInfo.dir}`} />
               <Button type="submit" variant="outline">
-                Buscar
+                Filtrar
               </Button>
+              {(hayFiltros || sp.q) && (
+                <Button variant="ghost" asChild>
+                  <Link href="/stock">Limpiar</Link>
+                </Button>
+              )}
             </form>
             <Can permission="stock.create">
               <Button asChild>
