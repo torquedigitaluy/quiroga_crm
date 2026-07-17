@@ -9,33 +9,32 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const conforme = await db.conforme.findUnique({
     where: { id },
-    include: {
-      firmantes: { orderBy: { orden: "asc" } },
-      cuota: true,
-      financiacionPropia: { include: { vehiculo: true } },
-    },
+    include: { cuota: true },
   });
 
   if (!conforme) {
-    return new Response("Recibo no encontrado", { status: 404 });
+    return new Response("Conforme no encontrado", { status: 404 });
   }
-
-  const numeroCuota = conforme.cuota?.numero ?? null;
-  const cuotasRestantes = numeroCuota !== null ? Math.max(conforme.cantidadCuotas - numeroCuota, 0) : null;
 
   const buffer = await renderToBuffer(
     <ConformePDF
       data={{
         montoCuotaCents: conforme.montoCuotaCents,
-        fechaPago: conforme.fechaPago,
-        formaPago: conforme.formaPago,
+        montoEnLetras: conforme.montoEnLetras,
+        fechaVencimiento: conforme.fechaVencimiento,
+        numeroCuota: conforme.cuota?.numero ?? null,
         cantidadCuotas: conforme.cantidadCuotas,
-        vehiculoLabel: conforme.financiacionPropia.vehiculo
-          ? `${conforme.financiacionPropia.vehiculo.marca} ${conforme.financiacionPropia.vehiculo.modelo}`
-          : conforme.financiacionPropia.nombre,
-        numeroCuota,
-        cuotasRestantes,
-        firmantes: conforme.firmantes.map((f) => ({ nombre: f.nombre, ci: f.ci })),
+        acreedorNombre: conforme.acreedorNombre,
+        acreedorCi: conforme.acreedorCi,
+        fechaPago: conforme.fechaPago,
+        numeroFactura: conforme.numeroFactura,
+        concepto: conforme.concepto,
+        fechaFactura: conforme.fechaFactura,
+        deudorNombre: conforme.deudorNombre,
+        deudorCedula: conforme.deudorCedula,
+        deudorDomicilio: conforme.deudorDomicilio,
+        deudorDepartamentoDireccion: conforme.deudorDepartamentoDireccion,
+        deudorTelefono: conforme.deudorTelefono,
       }}
     />,
   );
@@ -43,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="recibo-pago-${id}.pdf"`,
+      "Content-Disposition": `inline; filename="conforme-${id}.pdf"`,
     },
   });
 }

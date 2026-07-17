@@ -133,7 +133,7 @@ export default async function DocumentosPage() {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Recibos de pago generados</h2>
+        <h2 className="text-lg font-semibold text-foreground">Conformes generados</h2>
         <Table>
           <TableHeader>
             <TableRow>
@@ -164,7 +164,7 @@ export default async function DocumentosPage() {
             {conformes.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
-                  No hay recibos de pago generados todavía. Se generan desde Financiación Propia → Cuotas.
+                  No hay conformes generados todavía. Se generan desde Financiación Propia → Cuotas.
                 </TableCell>
               </TableRow>
             )}

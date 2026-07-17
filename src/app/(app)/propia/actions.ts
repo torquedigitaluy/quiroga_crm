@@ -7,7 +7,7 @@ import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
 import { logAudit } from "@/lib/audit";
-import { financiacionPropiaSchema, deudaClienteSchema, conformeSchema } from "./schema";
+import { financiacionPropiaSchema, deudaClienteSchema } from "./schema";
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -125,49 +125,79 @@ export async function marcarDeudaSaldada(id: string, saldado: boolean) {
   revalidatePath("/propia/deudas");
 }
 
+function conformeStr(formData: FormData, field: string): string | null {
+  const v = String(formData.get(field) ?? "").trim();
+  return v || null;
+}
+function conformeDate(formData: FormData, field: string): Date | null {
+  const v = String(formData.get(field) ?? "").trim();
+  return v ? new Date(v) : null;
+}
+
+/** Campos del documento Conforme tomados del formulario (réplica del papel). */
+function conformeData(formData: FormData) {
+  const estadoRaw = String(formData.get("estado") ?? "PAGADO");
+  const estado = ["PENDIENTE", "PAGADO", "VENCIDO"].includes(estadoRaw)
+    ? (estadoRaw as "PENDIENTE" | "PAGADO" | "VENCIDO")
+    : "PAGADO";
+  return {
+    montoCuotaCents: unitsToCents(parseFloat(String(formData.get("montoCents") ?? "0")) || 0),
+    montoEnLetras: conformeStr(formData, "montoEnLetras"),
+    fechaVencimiento: conformeDate(formData, "fechaVencimiento") ?? new Date(),
+    fechaPago: conformeDate(formData, "fechaPago") ?? new Date(),
+    acreedorNombre: conformeStr(formData, "acreedorNombre") ?? "JORGE DANIEL QUIROGA SANABRIA",
+    acreedorCi: conformeStr(formData, "acreedorCi") ?? "3.283.578-8",
+    numeroFactura: conformeStr(formData, "numeroFactura"),
+    concepto: conformeStr(formData, "concepto") ?? "COMPRA VENTA AUTOMOTOR",
+    fechaFactura: conformeDate(formData, "fechaFactura"),
+    deudorNombre: conformeStr(formData, "deudorNombre"),
+    deudorCedula: conformeStr(formData, "deudorCedula"),
+    deudorDomicilio: conformeStr(formData, "deudorDomicilio"),
+    deudorDepartamentoDireccion: conformeStr(formData, "deudorDepartamentoDireccion"),
+    deudorTelefono: conformeStr(formData, "deudorTelefono"),
+    estado,
+  };
+}
+
 export async function generateConforme(financiacionPropiaId: string, cuotaId: string, formData: FormData) {
   await assertCan("conforme.generate");
 
-  const raw = {
-    firmante1Nombre: String(formData.get("firmante1Nombre") ?? ""),
-    firmante1Ci: String(formData.get("firmante1Ci") ?? ""),
-    firmante2Nombre: String(formData.get("firmante2Nombre") ?? ""),
-    firmante2Ci: String(formData.get("firmante2Ci") ?? ""),
-    formaPago: String(formData.get("formaPago") ?? "CONTADO"),
-  };
-  const parsed = conformeSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues.map((i) => i.message).join(", "));
-  }
-  const data = parsed.data;
-
-  const [financiacion, cuota] = await Promise.all([
-    db.financiacionPropia.findUniqueOrThrow({ where: { id: financiacionPropiaId } }),
-    db.cuotaPropia.findUniqueOrThrow({ where: { id: cuotaId } }),
-  ]);
+  const financiacion = await db.financiacionPropia.findUniqueOrThrow({ where: { id: financiacionPropiaId } });
 
   const conforme = await db.conforme.create({
     data: {
       financiacionPropiaId,
       cuotaId,
-      montoCuotaCents: cuota.montoCents,
-      fechaVencimiento: cuota.fechaVencimiento,
       cantidadCuotas: financiacion.cantidadCuotas,
-      fechaPago: new Date(),
-      formaPago: data.formaPago,
-      firmantes: {
-        create: [
-          { nombre: data.firmante1Nombre, ci: data.firmante1Ci || null, orden: 1 },
-          ...(data.firmante2Nombre
-            ? [{ nombre: data.firmante2Nombre, ci: data.firmante2Ci || null, orden: 2 }]
-            : []),
-        ],
-      },
+      ...conformeData(formData),
     },
+  });
+
+  await logAudit({
+    accion: "CREAR",
+    entidad: "Conforme",
+    entidadId: conforme.id,
+    descripcion: `Generó un conforme del plan de ${financiacion.nombre}`,
   });
 
   revalidatePath(`/propia/${financiacionPropiaId}`);
   redirect(`/propia/conformes/${conforme.id}`);
+}
+
+export async function updateConforme(conformeId: string, formData: FormData) {
+  await assertCan("conforme.generate");
+  const conforme = await db.conforme.update({
+    where: { id: conformeId },
+    data: conformeData(formData),
+  });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Conforme",
+    entidadId: conformeId,
+    descripcion: "Editó un conforme",
+  });
+  revalidatePath(`/propia/conformes/${conformeId}`);
+  redirect(`/propia/conformes/${conformeId}`);
 }
 
 export async function archiveFinanciacionPropia(id: string) {

@@ -171,6 +171,12 @@ enum FormaPagoRecibo {
   TRANSFERENCIA
 }
 
+enum EstadoConforme {
+  PENDIENTE
+  PAGADO
+  VENCIDO
+}
+
 // ---------- Auth & Permissions ----------
 
 model User {
@@ -589,6 +595,20 @@ model Conforme {
   cantidadCuotas       Int
   fechaPago            DateTime           @default(now())
   formaPago            FormaPagoRecibo    @default(CONTADO)
+
+  // Réplica del documento físico "Conforme"
+  montoEnLetras               String?
+  acreedorNombre              String          @default("JORGE DANIEL QUIROGA SANABRIA")
+  acreedorCi                  String          @default("3.283.578-8")
+  numeroFactura               String?
+  concepto                    String          @default("COMPRA VENTA AUTOMOTOR")
+  fechaFactura                DateTime?
+  deudorNombre                String?
+  deudorCedula                String?
+  deudorDomicilio             String?
+  deudorDepartamentoDireccion String?
+  deudorTelefono              String?
+  estado                      EstadoConforme  @default(PAGADO)
   createdAt            DateTime           @default(now())
 
   firmantes ConformeFirmante[]
