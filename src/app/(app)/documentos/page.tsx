@@ -119,7 +119,7 @@ export default async function DocumentosPage() {
                   <TableCell className="flex justify-end gap-2">
                     <RestoreButton onConfirm={restorePromesa.bind(null, p.id)} />
                     <ConfirmDeleteButton
-                      onConfirm={() => deletePromesa(p.id)}
+                      onConfirm={deletePromesa.bind(null, p.id)}
                       triggerLabel="Eliminar"
                       title="Eliminar promesa definitivamente"
                       description="Esta acción no se puede deshacer. Se eliminará permanentemente la promesa de compraventa."
