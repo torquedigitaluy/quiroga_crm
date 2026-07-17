@@ -9,32 +9,31 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const conforme = await db.conforme.findUnique({
     where: { id },
-    include: { cuota: true },
+    include: { cuota: true, financiacionPropia: { include: { cliente: true, vehiculo: true } } },
   });
 
   if (!conforme) {
     return new Response("Conforme no encontrado", { status: 404 });
   }
 
+  const fin = conforme.financiacionPropia;
+  const persona =
+    conforme.deudorNombre?.trim() ||
+    (fin.cliente ? `${fin.cliente.nombre} ${fin.cliente.apellido ?? ""}`.trim() : "") ||
+    fin.nombre;
+  const vehiculoLabel = fin.vehiculo ? `${fin.vehiculo.marca} ${fin.vehiculo.modelo}` : null;
+
   const buffer = await renderToBuffer(
     <ConformePDF
       data={{
+        numeroRecibo: conforme.cuota?.numero ?? conforme.cantidadCuotas,
         montoCuotaCents: conforme.montoCuotaCents,
         montoEnLetras: conforme.montoEnLetras,
-        fechaVencimiento: conforme.fechaVencimiento,
         numeroCuota: conforme.cuota?.numero ?? null,
         cantidadCuotas: conforme.cantidadCuotas,
-        acreedorNombre: conforme.acreedorNombre,
-        acreedorCi: conforme.acreedorCi,
         fechaPago: conforme.fechaPago,
-        numeroFactura: conforme.numeroFactura,
-        concepto: conforme.concepto,
-        fechaFactura: conforme.fechaFactura,
-        deudorNombre: conforme.deudorNombre,
-        deudorCedula: conforme.deudorCedula,
-        deudorDomicilio: conforme.deudorDomicilio,
-        deudorDepartamentoDireccion: conforme.deudorDepartamentoDireccion,
-        deudorTelefono: conforme.deudorTelefono,
+        personaNombre: persona,
+        vehiculoLabel,
       }}
     />,
   );
@@ -42,7 +41,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="conforme-${id}.pdf"`,
+      "Content-Disposition": `inline; filename="recibo-pago-${id}.pdf"`,
     },
   });
 }

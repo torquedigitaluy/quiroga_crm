@@ -42,7 +42,7 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
             Volver al plan
           </Link>
           <h1 className="mt-2 text-2xl font-semibold text-foreground">
-            Conforme {conforme.cuota ? `— cuota N° ${conforme.cuota.numero} de ${conforme.cantidadCuotas}` : ""}
+            Recibo de pago {conforme.cuota ? `— cuota N° ${conforme.cuota.numero} de ${conforme.cantidadCuotas}` : ""}
           </h1>
           <p className="text-sm text-muted-foreground">
             {fin.nombre}
@@ -60,8 +60,7 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Podés editar los datos y volver a generar el PDF cuantas veces necesites. Las firmas se hacen a mano sobre el
-        impreso.
+        Podés editar los datos y volver a generar el PDF cuantas veces necesites, para enviárselo al cliente.
       </p>
 
       <ConformeForm
@@ -72,16 +71,7 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
           montoEnLetras: conforme.montoEnLetras ?? "",
           fechaVencimiento: toDateInput(conforme.fechaVencimiento),
           fechaPago: toDateInput(conforme.fechaPago),
-          acreedorNombre: conforme.acreedorNombre,
-          acreedorCi: conforme.acreedorCi,
-          numeroFactura: conforme.numeroFactura ?? "",
-          concepto: conforme.concepto,
-          fechaFactura: toDateInput(conforme.fechaFactura),
           deudorNombre: conforme.deudorNombre ?? "",
-          deudorCedula: conforme.deudorCedula ?? "",
-          deudorDomicilio: conforme.deudorDomicilio ?? "",
-          deudorDepartamentoDireccion: conforme.deudorDepartamentoDireccion ?? "",
-          deudorTelefono: conforme.deudorTelefono ?? "",
           estado: conforme.estado,
         }}
       />

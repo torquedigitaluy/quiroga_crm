@@ -35,7 +35,7 @@ export default async function GenerarConformePage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Generar conforme</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Generar recibo de pago</h1>
         <p className="text-sm text-muted-foreground">
           Cuota N° {cuota.numero} de {financiacion.cantidadCuotas} — plan de {financiacion.nombre}
           {financiacion.vehiculo ? ` · ${financiacion.vehiculo.marca} ${financiacion.vehiculo.modelo}` : ""}. Los datos
@@ -44,16 +44,13 @@ export default async function GenerarConformePage({
       </div>
       <ConformeForm
         action={boundAction}
-        submitLabel="Generar conforme"
+        submitLabel="Generar recibo"
         initial={{
           montoUnits: String(montoUnits),
           montoEnLetras: numeroALetras(montoUnits),
           fechaVencimiento: toDateInput(cuota.fechaVencimiento),
           fechaPago: toDateInput(new Date()),
           deudorNombre,
-          deudorCedula: cliente?.ci ?? "",
-          deudorDomicilio: cliente?.direccion ?? "",
-          deudorTelefono: cliente?.contacto ?? financiacion.contacto ?? "",
           estado: "PAGADO",
         }}
       />
