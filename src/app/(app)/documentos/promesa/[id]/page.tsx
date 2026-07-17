@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
-import { PromesaForm, type VentaOption } from "@/components/documentos/PromesaForm";
+import { PromesaForm, type VentaOption, type VehiculoStockOption } from "@/components/documentos/PromesaForm";
 import { updatePromesa, archivePromesa } from "../actions";
 
 function toDateInput(d: Date): string {
@@ -19,7 +19,7 @@ export default async function EditarPromesaPage({ params }: { params: Promise<{ 
   await assertCan("docs.generate");
   const { id } = await params;
 
-  const [promesa, ventas, puedeArchivar] = await Promise.all([
+  const [promesa, ventas, vehiculos, puedeArchivar] = await Promise.all([
     db.promesaCompraventa.findUnique({ where: { id } }),
     db.venta.findMany({
       where: { archivedAt: null },
@@ -27,10 +27,27 @@ export default async function EditarPromesaPage({ params }: { params: Promise<{ 
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, archivedAt: null },
+      orderBy: { marca: "asc" },
+    }),
     can("docs.generate"),
   ]);
 
   if (!promesa) notFound();
+
+  const vehiculoOptions: VehiculoStockOption[] = vehiculos.map((v) => ({
+    id: v.id,
+    label: `${v.marca} ${v.modelo}${v.matricula ? ` — ${v.matricula}` : ""}`,
+    vehMarca: v.marca,
+    vehModelo: v.modelo,
+    vehTipo: null,
+    vehColor: v.color,
+    vehAnio: v.anio,
+    vehMatricula: v.matricula,
+    vehMotor: v.motor,
+    vehChasis: v.chasis,
+  }));
 
   const ventaOptions: VentaOption[] = ventas.map((v) => ({
     id: v.id,
@@ -70,6 +87,7 @@ export default async function EditarPromesaPage({ params }: { params: Promise<{ 
 
       <PromesaForm
         ventas={ventaOptions}
+        vehiculosStock={vehiculoOptions}
         initialVentaId={promesa.ventaId}
         initialClienteId={promesa.clienteId}
         initialVehiculoId={promesa.vehiculoId}
@@ -100,10 +118,12 @@ export default async function EditarPromesaPage({ params }: { params: Promise<{ 
           senaUsdCents: toUnits(promesa.senaUsdCents),
           pagoRetiroUnidadUsdCents: toUnits(promesa.pagoRetiroUnidadUsdCents),
           capitalFinanciadoUsdCents: toUnits(promesa.capitalFinanciadoUsdCents),
-          conformesUsdCents: toUnits(promesa.conformesUsdCents),
+          conformesCantidadCuotas: promesa.conformesCantidadCuotas != null ? String(promesa.conformesCantidadCuotas) : "",
+          conformesCuotaUsdCents: toUnits(promesa.conformesCuotaUsdCents),
           valorTomaAutoUsdCents: toUnits(promesa.valorTomaAutoUsdCents),
           totalUsdCents: toUnits(promesa.totalUsdCents),
           costoTitulosUsdCents: toUnits(promesa.costoTitulosUsdCents),
+          costoTitulosMoneda: promesa.costoTitulosMoneda ?? "USD",
           cartaPagoUsdCents: toUnits(promesa.cartaPagoUsdCents),
           entregaCuentaTitulosUsdCents: toUnits(promesa.entregaCuentaTitulosUsdCents),
           aseguradora: promesa.aseguradora ?? "",

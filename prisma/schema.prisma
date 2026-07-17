@@ -734,11 +734,14 @@ model PromesaCompraventa {
   pagoRetiroUnidadUsdCents   Int?
   capitalFinanciadoUsdCents  Int?
   conformesUsdCents          Int?
+  conformesCantidadCuotas    Int?
+  conformesCuotaUsdCents     Int?
   valorTomaAutoUsdCents      Int?
   totalUsdCents              Int?
 
   // Documentación
   costoTitulosUsdCents         Int?
+  costoTitulosMoneda           Moneda @default(USD)
   cartaPagoUsdCents             Int?
   entregaCuentaTitulosUsdCents Int?
 

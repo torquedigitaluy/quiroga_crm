@@ -31,6 +31,10 @@ function bool(formData: FormData, field: string): boolean {
 }
 
 function buildData(formData: FormData) {
+  const conformesCantidadCuotas = intOrNull(formData, "conformesCantidadCuotas");
+  const conformesCuotaUsdCents = centsOrNull(formData, "conformesCuotaUsdCents");
+  const costoTitulosMonedaRaw = String(formData.get("costoTitulosMoneda") ?? "USD");
+  const costoTitulosMoneda: "UYU" | "USD" = costoTitulosMonedaRaw === "UYU" ? "UYU" : "USD";
   return {
     ventaId: str(formData, "ventaId"),
     vehiculoId: str(formData, "vehiculoId"),
@@ -63,11 +67,18 @@ function buildData(formData: FormData) {
     senaUsdCents: centsOrNull(formData, "senaUsdCents"),
     pagoRetiroUnidadUsdCents: centsOrNull(formData, "pagoRetiroUnidadUsdCents"),
     capitalFinanciadoUsdCents: centsOrNull(formData, "capitalFinanciadoUsdCents"),
-    conformesUsdCents: centsOrNull(formData, "conformesUsdCents"),
+    conformesCantidadCuotas,
+    conformesCuotaUsdCents,
+    // Total de conformes = cantidad de cuotas × monto de cada cuota.
+    conformesUsdCents:
+      conformesCantidadCuotas != null && conformesCuotaUsdCents != null
+        ? conformesCantidadCuotas * conformesCuotaUsdCents
+        : null,
     valorTomaAutoUsdCents: centsOrNull(formData, "valorTomaAutoUsdCents"),
     totalUsdCents: centsOrNull(formData, "totalUsdCents"),
 
     costoTitulosUsdCents: centsOrNull(formData, "costoTitulosUsdCents"),
+    costoTitulosMoneda,
     cartaPagoUsdCents: centsOrNull(formData, "cartaPagoUsdCents"),
     entregaCuentaTitulosUsdCents: centsOrNull(formData, "entregaCuentaTitulosUsdCents"),
 
@@ -142,4 +153,18 @@ export async function restorePromesa(id: string) {
   await db.promesaCompraventa.update({ where: { id }, data: { archivedAt: null } });
   await logAudit({ accion: "EDITAR", entidad: "Promesa de Compraventa", entidadId: id, descripcion: "Restauró la promesa de compraventa" });
   revalidatePath("/documentos");
+}
+
+export async function deletePromesa(id: string) {
+  await assertCan("docs.generate");
+  const promesa = await db.promesaCompraventa.findUnique({ where: { id } });
+  await db.promesaCompraventa.delete({ where: { id } });
+  await logAudit({
+    accion: "ELIMINAR",
+    entidad: "Promesa de Compraventa",
+    entidadId: id,
+    descripcion: `Eliminó definitivamente la promesa de compraventa${promesa ? ` N° ${promesa.numero}` : ""}`,
+  });
+  revalidatePath("/documentos");
+  revalidatePath("/documentos/archivados");
 }

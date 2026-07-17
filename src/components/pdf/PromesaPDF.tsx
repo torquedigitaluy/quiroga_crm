@@ -3,23 +3,32 @@ import { PdfHeader } from "./PdfHeader";
 import { pdfStyles } from "./shared";
 
 const styles = StyleSheet.create({
-  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
+  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   metaItem: { fontSize: 9, color: "#667085" },
   metaValue: { fontWeight: 700, color: "#1A1D29" },
-  twoCol: { flexDirection: "row", gap: 16 },
-  threeCol: { flexDirection: "row", gap: 12 },
+  twoCol: { flexDirection: "row", gap: 12 },
+  threeCol: { flexDirection: "row", gap: 10 },
   col: { flex: 1 },
-  box: { border: "1 solid #E3E6EC", borderRadius: 4, padding: 8, marginBottom: 10 },
-  boxTitle: { fontSize: 9, fontWeight: 700, color: "#0936B3", marginBottom: 4, textTransform: "uppercase" },
-  smallRow: { flexDirection: "row", marginBottom: 3 },
-  smallLabel: { width: 110, fontSize: 9, color: "#667085" },
-  smallValue: { flex: 1, fontSize: 9, fontWeight: 700 },
-  siNo: { fontSize: 9, fontWeight: 700, marginBottom: 4 },
-  tableHeader: { flexDirection: "row", borderBottom: "1 solid #1A1D29", paddingBottom: 3, marginBottom: 3 },
-  tableRow: { flexDirection: "row", paddingVertical: 2, borderBottom: "0.5 solid #E3E6EC" },
+  box: { border: "1 solid #E3E6EC", borderRadius: 4, padding: 7, marginBottom: 7 },
+  boxTitle: { fontSize: 8.5, fontWeight: 700, color: "#0936B3", marginBottom: 4, textTransform: "uppercase" },
+  smallRow: { flexDirection: "row", marginBottom: 2.5 },
+  smallLabel: { width: 96, fontSize: 8.5, color: "#667085" },
+  smallValue: { flex: 1, fontSize: 8.5, fontWeight: 700 },
+  // Fila apilada (para cajas angostas: evita que label y valor se superpongan).
+  stackRow: { marginBottom: 3 },
+  stackLabel: { fontSize: 7, color: "#667085", textTransform: "uppercase" },
+  stackValue: { fontSize: 9, fontWeight: 700 },
+  siNo: { fontSize: 8.5, fontWeight: 700, marginBottom: 4 },
+  tableHeader: { flexDirection: "row", borderBottom: "1 solid #1A1D29", paddingBottom: 2, marginBottom: 2 },
+  tableRow: { flexDirection: "row", paddingVertical: 1.5, borderBottom: "0.5 solid #E3E6EC" },
   th: { fontSize: 8, fontWeight: 700, color: "#667085" },
-  td: { fontSize: 9 },
-  legal: { fontSize: 8, lineHeight: 1.4, color: "#1A1D29", marginBottom: 10 },
+  td: { fontSize: 8.5 },
+  sectionTitle: { marginTop: 8, marginBottom: 4, fontSize: 10, fontWeight: 700, color: "#0936B3" },
+  legalClause: { fontSize: 7.5, lineHeight: 1.35, color: "#1A1D29", marginBottom: 3, textAlign: "justify" },
+  signaturesRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 22, gap: 20 },
+  signatureBox: { flex: 1, alignItems: "center" },
+  signatureLine: { borderTop: "1 solid #1A1D29", width: "100%", marginTop: 24, paddingTop: 3 },
+  signatureName: { fontSize: 9, marginTop: 2 },
 });
 
 export type PromesaPdfData = {
@@ -49,9 +58,12 @@ export type PromesaPdfData = {
   pagoRetiroUnidadUsdCents: number | null;
   capitalFinanciadoUsdCents: number | null;
   conformesUsdCents: number | null;
+  conformesCantidadCuotas: number | null;
+  conformesCuotaUsdCents: number | null;
   valorTomaAutoUsdCents: number | null;
   totalUsdCents: number | null;
   costoTitulosUsdCents: number | null;
+  costoTitulosMoneda: string;
   cartaPagoUsdCents: number | null;
   entregaCuentaTitulosUsdCents: number | null;
   seguro: boolean;
@@ -71,10 +83,20 @@ export type PromesaPdfData = {
   permutaChasis: string | null;
 };
 
-function money(cents: number | null): string {
+// Texto legal fijo que va SIEMPRE por encima de Observaciones.
+const CLAUSULAS_LEGALES: string[] = [
+  "Primero: QUIROGA AUTOMOVILES promete vender libre de obligaciones o gravámenes el vehículo arriba detallado a la parte indicada como 'Comprador' o a quien éste designe.",
+  "Segundo: El precio de esta promesa es el detallado en 'Condiciones de Pago'.",
+  "Tercero: Constituyen domicilios especiales los establecidos en la comparecencia.",
+  "Cuarto: Se firman dos ejemplares del mismo tenor.",
+  "Quinto: Las partes acuerdan en este acto que para el caso que por motivos ajenos a QUIROGA AUTOMOVILES la presente compraventa no sea efectiva, se acuerda que lo entregado por concepto de seña podrá ser retenido por QUIROGA AUTOMOVILES como multa por el incumplimiento de dicha compraventa.",
+  "El cliente asume conformidad al revisar o probar el vehículo previamente a la compraventa, reconociendo que el mismo no cuenta con vicios ocultos idóneos, el kilometraje declarado en tablero, el funcionamiento de los sistemas de seguridad y el estado general actual del vehículo al momento de la venta, deslindando de responsabilidades civiles o penales a quien vende y/o participe de este compromiso de compraventa.",
+];
+
+function money(cents: number | null, moneda: string = "USD"): string {
   if (cents == null) return "—";
   const amount = (cents / 100).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `US$ ${amount}`;
+  return `${moneda === "UYU" ? "$" : "U$S"} ${amount}`;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -86,7 +108,22 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+// Fila apilada para cajas angostas (3 columnas), evita superposición.
+function StackRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.stackRow}>
+      <Text style={styles.stackLabel}>{label}</Text>
+      <Text style={styles.stackValue}>{value || "—"}</Text>
+    </View>
+  );
+}
+
 export function PromesaPDF({ data }: { data: PromesaPdfData }) {
+  const conformesTexto =
+    data.conformesCantidadCuotas != null && data.conformesCuotaUsdCents != null
+      ? `${data.conformesCantidadCuotas} cuotas de ${money(data.conformesCuotaUsdCents)}`
+      : money(data.conformesUsdCents);
+
   return (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
@@ -142,31 +179,23 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
           </Text>
           <View style={styles.tableHeader}>
             <Text style={[styles.th, { flex: 1 }]}>Concepto</Text>
-            <Text style={[styles.th, { width: 90, textAlign: "right" }]}>US$</Text>
+            <Text style={[styles.th, { width: 140, textAlign: "right" }]}>Detalle</Text>
           </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.td, { flex: 1 }]}>Seña</Text>
-            <Text style={[styles.td, { width: 90, textAlign: "right" }]}>{money(data.senaUsdCents)}</Text>
-          </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.td, { flex: 1 }]}>Pago retiro unidad</Text>
-            <Text style={[styles.td, { width: 90, textAlign: "right" }]}>{money(data.pagoRetiroUnidadUsdCents)}</Text>
-          </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.td, { flex: 1 }]}>Capital financiado</Text>
-            <Text style={[styles.td, { width: 90, textAlign: "right" }]}>{money(data.capitalFinanciadoUsdCents)}</Text>
-          </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.td, { flex: 1 }]}>Conformes</Text>
-            <Text style={[styles.td, { width: 90, textAlign: "right" }]}>{money(data.conformesUsdCents)}</Text>
-          </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.td, { flex: 1 }]}>Valor toma auto</Text>
-            <Text style={[styles.td, { width: 90, textAlign: "right" }]}>{money(data.valorTomaAutoUsdCents)}</Text>
-          </View>
+          {[
+            { c: "Seña", v: money(data.senaUsdCents) },
+            { c: "Pago retiro unidad", v: money(data.pagoRetiroUnidadUsdCents) },
+            { c: "Capital financiado", v: money(data.capitalFinanciadoUsdCents) },
+            { c: "Conformes", v: conformesTexto },
+            { c: "Valor toma auto", v: money(data.valorTomaAutoUsdCents) },
+          ].map((r) => (
+            <View style={styles.tableRow} key={r.c}>
+              <Text style={[styles.td, { flex: 1 }]}>{r.c}</Text>
+              <Text style={[styles.td, { width: 140, textAlign: "right" }]}>{r.v}</Text>
+            </View>
+          ))}
           <View style={styles.tableRow}>
             <Text style={[styles.td, { flex: 1, fontWeight: 700 }]}>Total</Text>
-            <Text style={[styles.td, { width: 90, textAlign: "right", fontWeight: 700 }]}>{money(data.totalUsdCents)}</Text>
+            <Text style={[styles.td, { width: 140, textAlign: "right", fontWeight: 700 }]}>{money(data.totalUsdCents)}</Text>
           </View>
         </View>
 
@@ -174,9 +203,9 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
           <View style={styles.col}>
             <View style={styles.box}>
               <Text style={styles.boxTitle}>Documentación</Text>
-              <Row label="Costo de títulos" value={money(data.costoTitulosUsdCents)} />
-              <Row label="Carta de pago" value={money(data.cartaPagoUsdCents)} />
-              <Row label="Entrega a cta. títulos" value={money(data.entregaCuentaTitulosUsdCents)} />
+              <StackRow label="Costo de títulos" value={money(data.costoTitulosUsdCents, data.costoTitulosMoneda)} />
+              <StackRow label="Carta de pago" value={money(data.cartaPagoUsdCents)} />
+              <StackRow label="Entrega a cta. títulos" value={money(data.entregaCuentaTitulosUsdCents)} />
             </View>
           </View>
           <View style={styles.col}>
@@ -185,8 +214,8 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
               <Text style={styles.siNo}>{data.seguro ? "Sí" : "No"}</Text>
               {data.seguro && (
                 <>
-                  <Row label="Aseguradora" value={data.aseguradora ?? ""} />
-                  <Row label="Cobertura" value={data.cobertura ?? ""} />
+                  <StackRow label="Aseguradora" value={data.aseguradora ?? ""} />
+                  <StackRow label="Cobertura" value={data.cobertura ?? ""} />
                 </>
               )}
             </View>
@@ -195,21 +224,22 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
             <View style={styles.box}>
               <Text style={styles.boxTitle}>Cesión de derechos</Text>
               <Text style={styles.siNo}>{data.cesionDerechos ? "Sí" : "No"}</Text>
-              {data.cesionDerechos && <Row label="A nombre de" value={data.cesionANombreDe ?? ""} />}
+              {data.cesionDerechos && <StackRow label="A nombre de" value={data.cesionANombreDe ?? ""} />}
             </View>
           </View>
         </View>
 
-        <Text style={pdfStyles.section}>Condiciones generales</Text>
-        <Text style={styles.legal}>
-          [Texto legal pendiente — reemplazar por la redacción exacta del formulario físico &quot;Promesa de Compra-Venta&quot;
-          de Quiroga Automóviles.]
-        </Text>
+        <Text style={styles.sectionTitle}>Condiciones generales</Text>
+        {CLAUSULAS_LEGALES.map((clausula, i) => (
+          <Text key={i} style={styles.legalClause}>
+            {clausula}
+          </Text>
+        ))}
 
         {data.observaciones && (
           <>
-            <Text style={pdfStyles.section}>Observaciones</Text>
-            <Text style={pdfStyles.paragraph}>{data.observaciones}</Text>
+            <Text style={styles.sectionTitle}>Observaciones</Text>
+            <Text style={[pdfStyles.paragraph, { fontSize: 9, marginBottom: 6 }]}>{data.observaciones}</Text>
           </>
         )}
 
@@ -217,35 +247,35 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
           <Text style={styles.boxTitle}>Vehículo que se permuta</Text>
           <View style={styles.threeCol}>
             <View style={styles.col}>
-              <Row label="Marca" value={data.permutaMarca ?? ""} />
-              <Row label="Modelo" value={data.permutaModelo ?? ""} />
-              <Row label="Tipo" value={data.permutaTipo ?? ""} />
+              <StackRow label="Marca" value={data.permutaMarca ?? ""} />
+              <StackRow label="Modelo" value={data.permutaModelo ?? ""} />
+              <StackRow label="Tipo" value={data.permutaTipo ?? ""} />
             </View>
             <View style={styles.col}>
-              <Row label="Color" value={data.permutaColor ?? ""} />
-              <Row label="Llaves" value={data.permutaLlaves ?? ""} />
-              <Row label="Año" value={data.permutaAnio != null ? String(data.permutaAnio) : ""} />
+              <StackRow label="Color" value={data.permutaColor ?? ""} />
+              <StackRow label="Llaves" value={data.permutaLlaves ?? ""} />
+              <StackRow label="Año" value={data.permutaAnio != null ? String(data.permutaAnio) : ""} />
             </View>
             <View style={styles.col}>
-              <Row label="Matrícula" value={data.permutaMatricula ?? ""} />
-              <Row label="Motor" value={data.permutaMotor ?? ""} />
-              <Row label="Chasis" value={data.permutaChasis ?? ""} />
+              <StackRow label="Matrícula" value={data.permutaMatricula ?? ""} />
+              <StackRow label="Motor" value={data.permutaMotor ?? ""} />
+              <StackRow label="Chasis" value={data.permutaChasis ?? ""} />
             </View>
           </View>
-          <Text style={[styles.legal, { marginTop: 6, marginBottom: 0 }]}>
+          <Text style={[styles.legalClause, { marginTop: 4, marginBottom: 0 }]}>
             En caso de no tener dos llaves se retienen USD 200.
           </Text>
         </View>
 
-        <View style={pdfStyles.signaturesRow}>
-          <View style={pdfStyles.signatureBox}>
-            <View style={pdfStyles.signatureLine}>
-              <Text style={pdfStyles.signatureName}>Firma Vendedor</Text>
+        <View style={styles.signaturesRow} wrap={false}>
+          <View style={styles.signatureBox}>
+            <View style={styles.signatureLine}>
+              <Text style={styles.signatureName}>Firma Vendedor</Text>
             </View>
           </View>
-          <View style={pdfStyles.signatureBox}>
-            <View style={pdfStyles.signatureLine}>
-              <Text style={pdfStyles.signatureName}>Firma Cliente</Text>
+          <View style={styles.signatureBox}>
+            <View style={styles.signatureLine}>
+              <Text style={styles.signatureName}>Firma Cliente</Text>
             </View>
           </View>
         </View>

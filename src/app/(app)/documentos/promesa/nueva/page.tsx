@@ -1,17 +1,36 @@
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
-import { PromesaForm, type VentaOption } from "@/components/documentos/PromesaForm";
+import { PromesaForm, type VentaOption, type VehiculoStockOption } from "@/components/documentos/PromesaForm";
 import { createPromesa } from "../actions";
 
 export default async function NuevaPromesaPage() {
   await assertCan("docs.generate");
 
-  const ventas = await db.venta.findMany({
-    where: { archivedAt: null },
-    include: { vehiculo: true, cliente: true },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  const [ventas, vehiculos] = await Promise.all([
+    db.venta.findMany({
+      where: { archivedAt: null },
+      include: { vehiculo: true, cliente: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, archivedAt: null },
+      orderBy: { marca: "asc" },
+    }),
+  ]);
+
+  const vehiculoOptions: VehiculoStockOption[] = vehiculos.map((v) => ({
+    id: v.id,
+    label: `${v.marca} ${v.modelo}${v.matricula ? ` — ${v.matricula}` : ""}`,
+    vehMarca: v.marca,
+    vehModelo: v.modelo,
+    vehTipo: null,
+    vehColor: v.color,
+    vehAnio: v.anio,
+    vehMatricula: v.matricula,
+    vehMotor: v.motor,
+    vehChasis: v.chasis,
+  }));
 
   const ventaOptions: VentaOption[] = ventas.map((v) => ({
     id: v.id,
@@ -37,7 +56,7 @@ export default async function NuevaPromesaPage() {
         <h1 className="text-2xl font-semibold text-foreground">Nueva Promesa de Compra-Venta</h1>
         <p className="text-sm text-muted-foreground">Completá los datos y generá el PDF para imprimir y firmar en papel.</p>
       </div>
-      <PromesaForm ventas={ventaOptions} action={createPromesa} submitLabel="Crear promesa" />
+      <PromesaForm ventas={ventaOptions} vehiculosStock={vehiculoOptions} action={createPromesa} submitLabel="Crear promesa" />
     </div>
   );
 }

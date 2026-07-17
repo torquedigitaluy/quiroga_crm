@@ -25,6 +25,19 @@ export type VentaOption = {
   clienteDomicilio: string;
 };
 
+export type VehiculoStockOption = {
+  id: string;
+  label: string;
+  vehMarca: string;
+  vehModelo: string;
+  vehTipo: string | null;
+  vehColor: string | null;
+  vehAnio: number | null;
+  vehMatricula: string | null;
+  vehMotor: string | null;
+  vehChasis: string | null;
+};
+
 export type PromesaFormValues = {
   vendedores: string;
   fecha: string;
@@ -49,10 +62,12 @@ export type PromesaFormValues = {
   senaUsdCents: string;
   pagoRetiroUnidadUsdCents: string;
   capitalFinanciadoUsdCents: string;
-  conformesUsdCents: string;
+  conformesCantidadCuotas: string;
+  conformesCuotaUsdCents: string;
   valorTomaAutoUsdCents: string;
   totalUsdCents: string;
   costoTitulosUsdCents: string;
+  costoTitulosMoneda: string;
   cartaPagoUsdCents: string;
   entregaCuentaTitulosUsdCents: string;
   aseguradora: string;
@@ -94,10 +109,12 @@ const EMPTY: PromesaFormValues = {
   senaUsdCents: "",
   pagoRetiroUnidadUsdCents: "",
   capitalFinanciadoUsdCents: "",
-  conformesUsdCents: "",
+  conformesCantidadCuotas: "",
+  conformesCuotaUsdCents: "",
   valorTomaAutoUsdCents: "",
   totalUsdCents: "",
   costoTitulosUsdCents: "",
+  costoTitulosMoneda: "USD",
   cartaPagoUsdCents: "",
   entregaCuentaTitulosUsdCents: "",
   aseguradora: "",
@@ -163,6 +180,7 @@ function TextField({
 
 export function PromesaForm({
   ventas,
+  vehiculosStock = [],
   initial,
   initialVentaId,
   initialClienteId,
@@ -174,6 +192,7 @@ export function PromesaForm({
   submitLabel,
 }: {
   ventas: VentaOption[];
+  vehiculosStock?: VehiculoStockOption[];
   initial?: Partial<PromesaFormValues>;
   initialVentaId?: string | null;
   initialClienteId?: string | null;
@@ -188,6 +207,8 @@ export function PromesaForm({
   const [ventaId, setVentaId] = useState(initialVentaId ?? "");
   const [clienteId, setClienteId] = useState(initialClienteId ?? "");
   const [vehiculoId, setVehiculoId] = useState(initialVehiculoId ?? "");
+  const [origenVeh, setOrigenVeh] = useState<"stock" | "externo">(initialVehiculoId ? "stock" : "externo");
+  const [costoMoneda, setCostoMoneda] = useState(initial?.costoTitulosMoneda ?? "USD");
   const [financia, setFinancia] = useState(initialFinancia ?? false);
   const [seguro, setSeguro] = useState(initialSeguro ?? false);
   const [cesion, setCesion] = useState(initialCesion ?? false);
@@ -195,6 +216,31 @@ export function PromesaForm({
   const [pending, startTransition] = useTransition();
 
   const update = (field: keyof PromesaFormValues, value: string) => setValues((v) => ({ ...v, [field]: value }));
+
+  const EMPTY_VEH = { vehMarca: "", vehModelo: "", vehTipo: "", vehColor: "", vehAnio: "", vehMatricula: "", vehMotor: "", vehChasis: "" };
+
+  const handleOrigenVeh = (nuevo: "stock" | "externo") => {
+    setOrigenVeh(nuevo);
+    setVehiculoId("");
+    setValues((prev) => ({ ...prev, ...EMPTY_VEH }));
+  };
+
+  const handleSelectVehiculoStock = (id: string) => {
+    setVehiculoId(id);
+    const v = vehiculosStock.find((x) => x.id === id);
+    if (!v) return;
+    setValues((prev) => ({
+      ...prev,
+      vehMarca: v.vehMarca,
+      vehModelo: v.vehModelo,
+      vehTipo: v.vehTipo ?? "",
+      vehColor: v.vehColor ?? "",
+      vehAnio: v.vehAnio != null ? String(v.vehAnio) : "",
+      vehMatricula: v.vehMatricula ?? "",
+      vehMotor: v.vehMotor ?? "",
+      vehChasis: v.vehChasis ?? "",
+    }));
+  };
 
   const handleSelectVenta = (id: string) => {
     setVentaId(id);
@@ -260,8 +306,39 @@ export function PromesaForm({
         <TextField label="Vendedor/es" field="vendedores" values={values} onChange={update} />
       </fieldset>
 
+      <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+        <Label>Vehículo</Label>
+        <div className="flex gap-2">
+          <Button type="button" variant={origenVeh === "stock" ? "default" : "outline"} onClick={() => handleOrigenVeh("stock")}>
+            De stock
+          </Button>
+          <Button type="button" variant={origenVeh === "externo" ? "default" : "outline"} onClick={() => handleOrigenVeh("externo")}>
+            Vehículo externo
+          </Button>
+        </div>
+        {origenVeh === "stock" ? (
+          <div className="flex flex-col gap-1.5">
+            <Label>Elegí el vehículo de stock</Label>
+            <Select value={vehiculoId || undefined} onValueChange={handleSelectVehiculoStock}>
+              <SelectTrigger>
+                <SelectValue placeholder="Elegí un vehículo" />
+              </SelectTrigger>
+              <SelectContent>
+                {vehiculosStock.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Cargá los datos del vehículo manualmente en los campos de abajo.</p>
+        )}
+      </div>
+
       <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-4">
-        <legend className="px-1 text-sm font-semibold text-foreground">Promesa de Compra-Venta — Vehículo</legend>
+        <legend className="px-1 text-sm font-semibold text-foreground">Datos del vehículo</legend>
         <TextField label="Marca" field="vehMarca" values={values} onChange={update} />
         <TextField label="Modelo" field="vehModelo" values={values} onChange={update} />
         <TextField label="Tipo" field="vehTipo" values={values} onChange={update} />
@@ -305,7 +382,31 @@ export function PromesaForm({
           <MoneyField label="Seña" field="senaUsdCents" values={values} onChange={update} />
           <MoneyField label="Pago retiro unidad" field="pagoRetiroUnidadUsdCents" values={values} onChange={update} />
           <MoneyField label="Capital financiado" field="capitalFinanciadoUsdCents" values={values} onChange={update} />
-          <MoneyField label="Conformes" field="conformesUsdCents" values={values} onChange={update} />
+          <div className="flex flex-col gap-1.5 sm:col-span-3">
+            <Label>Conformes</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                name="conformesCantidadCuotas"
+                type="number"
+                min="0"
+                placeholder="Cantidad"
+                className="w-28"
+                value={values.conformesCantidadCuotas}
+                onChange={(e) => update("conformesCantidadCuotas", e.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">cuotas de U$S</span>
+              <Input
+                name="conformesCuotaUsdCents"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Monto por cuota"
+                className="w-40"
+                value={values.conformesCuotaUsdCents}
+                onChange={(e) => update("conformesCuotaUsdCents", e.target.value)}
+              />
+            </div>
+          </div>
           <MoneyField label="Valor toma auto" field="valorTomaAutoUsdCents" values={values} onChange={update} />
           <MoneyField label="Total" field="totalUsdCents" values={values} onChange={update} />
         </div>
@@ -313,7 +414,28 @@ export function PromesaForm({
 
       <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
         <legend className="px-1 text-sm font-semibold text-foreground">Documentación</legend>
-        <MoneyField label="Costo de títulos" field="costoTitulosUsdCents" values={values} onChange={update} />
+        <div className="flex flex-col gap-1.5">
+          <Label>Costo de títulos</Label>
+          <div className="flex gap-2">
+            <Input
+              name="costoTitulosUsdCents"
+              type="number"
+              step="0.01"
+              value={values.costoTitulosUsdCents}
+              onChange={(e) => update("costoTitulosUsdCents", e.target.value)}
+            />
+            <input type="hidden" name="costoTitulosMoneda" value={costoMoneda} />
+            <Select value={costoMoneda} onValueChange={setCostoMoneda}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="UYU">$</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <MoneyField label="Carta de pago" field="cartaPagoUsdCents" values={values} onChange={update} />
         <MoneyField label="Entrega a cuenta de títulos" field="entregaCuentaTitulosUsdCents" values={values} onChange={update} />
       </fieldset>

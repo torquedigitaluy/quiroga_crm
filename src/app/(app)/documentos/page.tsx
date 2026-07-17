@@ -4,14 +4,22 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { RestoreButton } from "@/components/ui/RestoreButton";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { restorePromesa, deletePromesa } from "./promesa/actions";
 
 export default async function DocumentosPage() {
   await assertCan("docs.generate");
 
-  const [promesas, conformes] = await Promise.all([
+  const [promesas, promesasArchivadas, conformes] = await Promise.all([
     db.promesaCompraventa.findMany({
       where: { archivedAt: null },
       orderBy: { createdAt: "desc" },
+      take: 30,
+    }),
+    db.promesaCompraventa.findMany({
+      where: { archivedAt: { not: null } },
+      orderBy: { archivedAt: "desc" },
       take: 30,
     }),
     db.conforme.findMany({
@@ -82,6 +90,47 @@ export default async function DocumentosPage() {
           </TableBody>
         </Table>
       </section>
+
+      {promesasArchivadas.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold text-foreground">Promesas archivadas</h2>
+          <p className="text-sm text-muted-foreground">
+            No aparecen entre las activas. Podés restaurarlas o eliminarlas definitivamente.
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>N°</TableHead>
+                <TableHead>Vehículo</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Archivada</TableHead>
+                <TableHead className="w-48" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {promesasArchivadas.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{p.numero}</TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    {p.vehMarca} {p.vehModelo}
+                  </TableCell>
+                  <TableCell>{[p.clienteNombre, p.clienteApellido].filter(Boolean).join(" ") || "—"}</TableCell>
+                  <TableCell>{p.archivedAt ? new Date(p.archivedAt).toLocaleDateString("es-UY") : "—"}</TableCell>
+                  <TableCell className="flex justify-end gap-2">
+                    <RestoreButton onConfirm={restorePromesa.bind(null, p.id)} />
+                    <ConfirmDeleteButton
+                      onConfirm={() => deletePromesa(p.id)}
+                      triggerLabel="Eliminar"
+                      title="Eliminar promesa definitivamente"
+                      description="Esta acción no se puede deshacer. Se eliminará permanentemente la promesa de compraventa."
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-foreground">Recibos de pago generados</h2>
