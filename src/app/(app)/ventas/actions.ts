@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { assertCan, can } from "@/lib/permissions/engine";
+import { assertCan, assertCanAny, can } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
 import { logAudit } from "@/lib/audit";
@@ -33,7 +33,7 @@ export async function createVenta(formData: FormData) {
     localVenta: String(formData.get("localVenta") ?? "ZONAMERICA"),
     propietarioVehiculo: String(formData.get("propietarioVehiculo") ?? ""),
     comisionVentaUsdCents: unitsToCents(parseFloat(String(formData.get("comisionVentaUsdCents") ?? "0")) || 0),
-    comisionTituloUsdCents: unitsToCents(parseFloat(String(formData.get("comisionTituloUsdCents") ?? "0")) || 0),
+    comisionTituloPesosCents: unitsToCents(parseFloat(String(formData.get("comisionTituloPesosCents") ?? "0")) || 0),
   };
 
   const parsed = ventaSchema.safeParse(raw);
@@ -66,7 +66,7 @@ export async function createVenta(formData: FormData) {
       localVenta: data.localVenta,
       propietarioVehiculo: vehiculo?.propietario ?? data.propietarioVehiculo ?? null,
       comisionVentaUsdCents: data.comisionVentaUsdCents,
-      comisionTituloUsdCents: data.comisionTituloUsdCents,
+      comisionTituloPesosCents: data.comisionTituloPesosCents,
     },
   });
 
@@ -88,10 +88,18 @@ export async function createVenta(formData: FormData) {
 }
 
 export async function updateVenta(id: string, formData: FormData) {
-  await assertCan("ventas.edit");
+  const user = await assertCanAny(["ventas.edit", "ventas.edit_own"]);
+  const esAdmin = await can("ventas.edit");
+
+  const venta = await db.venta.findUnique({ where: { id } });
+  if (!venta) throw new Error("La venta no existe");
+  if (!esAdmin && venta.vendedorId !== user.id) {
+    throw new Error("No autorizado: solo podés editar tus propias ventas");
+  }
 
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
+    vehiculoExterno: String(formData.get("vehiculoExterno") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
     clienteApellido: String(formData.get("clienteApellido") ?? ""),
     clienteCi: String(formData.get("clienteCi") ?? ""),
@@ -104,7 +112,7 @@ export async function updateVenta(id: string, formData: FormData) {
     localVenta: String(formData.get("localVenta") ?? "ZONAMERICA"),
     propietarioVehiculo: "",
     comisionVentaUsdCents: unitsToCents(parseFloat(String(formData.get("comisionVentaUsdCents") ?? "0")) || 0),
-    comisionTituloUsdCents: unitsToCents(parseFloat(String(formData.get("comisionTituloUsdCents") ?? "0")) || 0),
+    comisionTituloPesosCents: unitsToCents(parseFloat(String(formData.get("comisionTituloPesosCents") ?? "0")) || 0),
   };
 
   const parsed = ventaSchema.safeParse(raw);
@@ -112,9 +120,6 @@ export async function updateVenta(id: string, formData: FormData) {
     throw new Error(parsed.error.issues.map((i) => i.message).join(", "));
   }
   const data = parsed.data;
-
-  const venta = await db.venta.findUnique({ where: { id } });
-  if (!venta) throw new Error("La venta no existe");
 
   // Actualiza (o reasigna) el cliente vinculado a la venta.
   const cliente = await findOrCreateCliente({
@@ -140,7 +145,7 @@ export async function updateVenta(id: string, formData: FormData) {
       localVenta: data.localVenta,
       propietarioVehiculo: vehiculo?.propietario ?? data.propietarioVehiculo ?? null,
       comisionVentaUsdCents: data.comisionVentaUsdCents,
-      comisionTituloUsdCents: data.comisionTituloUsdCents,
+      comisionTituloPesosCents: data.comisionTituloPesosCents,
     },
   });
 
@@ -154,7 +159,7 @@ export async function updateVenta(id: string, formData: FormData) {
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");
   revalidatePath(`/ventas/${id}`);
-  redirect("/ventas");
+  redirect(esAdmin ? "/ventas" : "/ventas/planilla");
 }
 
 export async function createVentaAccesorio(formData: FormData) {
@@ -168,7 +173,9 @@ export async function createVentaAccesorio(formData: FormData) {
   const vendedorId = String(formData.get("vendedorId") ?? "").trim();
   const fecha = String(formData.get("fecha") ?? "");
   const precioVenta = parseFloat(String(formData.get("precioVentaUsdCents") ?? "0")) || 0;
-  const comisionAccesorio = parseFloat(String(formData.get("comisionAccesorioUsdCents") ?? "0")) || 0;
+  const comisionAccesorio = parseFloat(String(formData.get("comisionAccesorioCents") ?? "0")) || 0;
+  const comisionAccesorioMonedaRaw = String(formData.get("comisionAccesorioMoneda") ?? "USD");
+  const comisionAccesorioMoneda = comisionAccesorioMonedaRaw === "UYU" ? "UYU" : "USD";
 
   if (!accesorioId) throw new Error("Elegí un accesorio");
 
@@ -193,7 +200,8 @@ export async function createVentaAccesorio(formData: FormData) {
       vendedorId: vendedorId || null,
       fecha: fecha ? new Date(fecha) : new Date(),
       precioVentaUsdCents: unitsToCents(precioVenta),
-      comisionAccesorioUsdCents: unitsToCents(comisionAccesorio),
+      comisionAccesorioCents: unitsToCents(comisionAccesorio),
+      comisionAccesorioMoneda,
     },
   });
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
-import { formatCents } from "@/lib/money";
+import { formatCents, convertCents } from "@/lib/money";
 import { localVentaLabel } from "@/lib/venta-labels";
 import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default async function VentasPage({
     dateFilter = { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) };
   }
 
-  const [ventas, vendedores] = await Promise.all([
+  const [ventas, vendedores, config] = await Promise.all([
     db.venta.findMany({
       where: {
         archivedAt: verArchivadas ? { not: null } : null,
@@ -40,10 +40,12 @@ export default async function VentasPage({
       orderBy: { fechaEntrega: "desc" },
     }),
     db.user.findMany({ where: { esVendedor: true }, orderBy: { nombre: "asc" } }),
+    db.configuracion.findUnique({ where: { id: 1 } }),
   ]);
+  const rateMicros = config?.tipoCambioGlobalMicros ?? 405_000;
 
   const totalComisiones = ventas.reduce(
-    (sum, v) => sum + v.comisionVentaUsdCents + v.comisionTituloUsdCents,
+    (sum, v) => sum + v.comisionVentaUsdCents + convertCents(v.comisionTituloPesosCents, "UYU", "USD", rateMicros),
     0,
   );
 
@@ -132,7 +134,7 @@ export default async function VentasPage({
               <TableCell>{localVentaLabel(v.localVenta)}</TableCell>
               <TableCell>{v.propietarioVehiculo ?? "—"}</TableCell>
               <TableCell>{formatCents(v.comisionVentaUsdCents, "USD")}</TableCell>
-              <TableCell>{formatCents(v.comisionTituloUsdCents, "USD")}</TableCell>
+              <TableCell>{formatCents(v.comisionTituloPesosCents, "UYU")}</TableCell>
               {puedeEditar && (
                 <TableCell className="flex justify-end gap-2 text-right">
                   {verArchivadas ? (

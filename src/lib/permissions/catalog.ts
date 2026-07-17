@@ -30,7 +30,8 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "ventas.view_full", label: "Ver todas las ventas", grupo: "Ventas" },
   { key: "ventas.view_own", label: "Ver mi planilla de venta", grupo: "Ventas" },
   { key: "ventas.create", label: "Registrar ventas", grupo: "Ventas" },
-  { key: "ventas.edit", label: "Editar ventas", grupo: "Ventas" },
+  { key: "ventas.edit", label: "Editar cualquier venta", grupo: "Ventas" },
+  { key: "ventas.edit_own", label: "Editar las ventas propias", grupo: "Ventas" },
 
   // BBVA
   { key: "bbva.view", label: "Ver créditos BBVA", grupo: "BBVA" },
@@ -116,6 +117,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.edit_status",
     "ventas.view_own",
     "ventas.create",
+    "ventas.edit_own",
     "taller.view_ordenes",
     "docs.generate",
   ],

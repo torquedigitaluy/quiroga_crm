@@ -100,8 +100,19 @@ export function VentaAccesorioForm({
           <Input name="precioVentaUsdCents" type="number" step="0.01" required />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Comisión por accesorio (USD)</Label>
-          <Input name="comisionAccesorioUsdCents" type="number" step="0.01" defaultValue={0} />
+          <Label>Comisión por accesorio</Label>
+          <div className="flex gap-2">
+            <Input name="comisionAccesorioCents" type="number" step="0.01" defaultValue={0} className="flex-1" />
+            <Select name="comisionAccesorioMoneda" defaultValue="USD">
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="UYU">$ (UYU)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

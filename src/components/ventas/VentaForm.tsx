@@ -27,7 +27,7 @@ export type VentaInitial = {
   vendedorId?: string | null;
   localVenta?: string;
   comisionVentaUsd?: number;
-  comisionTituloUsd?: number;
+  comisionTituloPesos?: number;
 };
 
 export function VentaForm({
@@ -210,8 +210,8 @@ export function VentaForm({
           <Input name="comisionVentaUsdCents" type="number" step="0.01" defaultValue={initial?.comisionVentaUsd ?? 0} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Comisión por título (USD)</Label>
-          <Input name="comisionTituloUsdCents" type="number" step="0.01" defaultValue={initial?.comisionTituloUsd ?? 0} />
+          <Label>Comisión por título (pesos $)</Label>
+          <Input name="comisionTituloPesosCents" type="number" step="0.01" defaultValue={initial?.comisionTituloPesos ?? 0} />
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
-import { formatCents } from "@/lib/money";
+import { assertCan, can } from "@/lib/permissions/engine";
+import { formatCents, convertCents } from "@/lib/money";
 import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -11,9 +11,10 @@ import { Can } from "@/components/auth/Can";
 
 export default async function PlanillaVentaPage() {
   const user = await assertCan("ventas.view_own");
+  const puedeEditarPropias = await can("ventas.edit_own");
   const now = new Date();
 
-  const [ventas, ventasAccesorio, vendedores, agrupado] = await Promise.all([
+  const [ventas, ventasAccesorio, vendedores, agrupado, config] = await Promise.all([
     db.venta.findMany({
       where: { vendedorId: user.id, archivedAt: null },
       include: { vehiculo: true },
@@ -31,7 +32,9 @@ export default async function PlanillaVentaPage() {
       _count: { _all: true },
       _sum: { precioVentaUsdCents: true, comisionVentaUsdCents: true },
     }),
+    db.configuracion.findUnique({ where: { id: 1 } }),
   ]);
+  const rateMicros = config?.tipoCambioGlobalMicros ?? 405_000;
 
   const statsByVendedor = new Map(agrupado.map((g) => [g.vendedorId, g]));
 
@@ -54,10 +57,13 @@ export default async function PlanillaVentaPage() {
   // demora: se cobran y comisionan en el momento.
   const ventasEntregadas = ventas.filter((v) => v.fechaEntrega && new Date(v.fechaEntrega) <= now);
   const totalComisionVehiculos = ventasEntregadas.reduce(
-    (sum, v) => sum + v.comisionVentaUsdCents + v.comisionTituloUsdCents,
+    (sum, v) => sum + v.comisionVentaUsdCents + convertCents(v.comisionTituloPesosCents, "UYU", "USD", rateMicros),
     0,
   );
-  const totalComisionAccesorios = ventasAccesorio.reduce((sum, v) => sum + v.comisionAccesorioUsdCents, 0);
+  const totalComisionAccesorios = ventasAccesorio.reduce(
+    (sum, v) => sum + convertCents(v.comisionAccesorioCents, v.comisionAccesorioMoneda, "USD", rateMicros),
+    0,
+  );
   const totalComisiones = totalComisionVehiculos + totalComisionAccesorios;
 
   return (
@@ -138,6 +144,7 @@ export default async function PlanillaVentaPage() {
                 <TableHead>Comisión venta</TableHead>
                 <TableHead>Comisión título</TableHead>
                 <TableHead>Estado comisión</TableHead>
+                {puedeEditarPropias && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -151,7 +158,7 @@ export default async function PlanillaVentaPage() {
                     <TableCell>{v.fechaEntrega ? new Date(v.fechaEntrega).toLocaleDateString("es-UY") : "—"}</TableCell>
                     <TableCell>{formatCents(v.precioVentaUsdCents, "USD")}</TableCell>
                     <TableCell>{formatCents(v.comisionVentaUsdCents, "USD")}</TableCell>
-                    <TableCell>{formatCents(v.comisionTituloUsdCents, "USD")}</TableCell>
+                    <TableCell>{formatCents(v.comisionTituloPesosCents, "UYU")}</TableCell>
                     <TableCell>
                       {entregado ? (
                         <span className="text-success">Cobrada</span>
@@ -159,12 +166,21 @@ export default async function PlanillaVentaPage() {
                         <span className="text-muted-foreground">Pendiente de entrega</span>
                       )}
                     </TableCell>
+                    {puedeEditarPropias && (
+                      <TableCell>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/ventas/${v.id}`}>
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
               {ventas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={puedeEditarPropias ? 9 : 8} className="py-8 text-center text-muted-foreground">
                     Todavía no tenés ventas registradas.
                   </TableCell>
                 </TableRow>
@@ -196,7 +212,7 @@ export default async function PlanillaVentaPage() {
                   </TableCell>
                   <TableCell>{new Date(v.fecha).toLocaleDateString("es-UY")}</TableCell>
                   <TableCell>{formatCents(v.precioVentaUsdCents, "USD")}</TableCell>
-                  <TableCell>{formatCents(v.comisionAccesorioUsdCents, "USD")}</TableCell>
+                  <TableCell>{formatCents(v.comisionAccesorioCents, v.comisionAccesorioMoneda)}</TableCell>
                 </TableRow>
               ))}
               {ventasAccesorio.length === 0 && (

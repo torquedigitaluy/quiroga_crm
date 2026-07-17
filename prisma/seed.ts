@@ -345,7 +345,7 @@ async function main() {
           localVenta: "ZONAMERICA",
           propietarioVehiculo: "Jorge",
           comisionVentaUsdCents: 50_000,
-          comisionTituloUsdCents: 20_000,
+          comisionTituloPesosCents: 20_000,
         },
       });
       await db.vehiculo.update({ where: { id: tiggoId }, data: { estado: "SENADO" } });

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCanAny, can } from "@/lib/permissions/engine";
 import { centsToUnits } from "@/lib/money";
 import { VentaForm } from "@/components/ventas/VentaForm";
 import { updateVenta } from "../actions";
@@ -13,21 +13,28 @@ function toDateInput(d: Date | null): string {
 }
 
 export default async function EditarVentaPage({ params }: { params: Promise<{ id: string }> }) {
-  await assertCan("ventas.edit");
+  const user = await assertCanAny(["ventas.edit", "ventas.edit_own"]);
+  const esAdmin = await can("ventas.edit");
   const { id } = await params;
 
   const [venta, vendedores] = await Promise.all([
     db.venta.findUnique({ where: { id }, include: { vehiculo: true, cliente: true } }),
-    db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } }),
+    esAdmin
+      ? db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } })
+      : Promise.resolve([]),
   ]);
   if (!venta) notFound();
+  // Un vendedor solo puede editar sus propias ventas, nunca las de otro.
+  if (!esAdmin && venta.vendedorId !== user.id) notFound();
 
   const boundUpdate = updateVenta.bind(null, id);
+  const volverHref = esAdmin ? "/ventas" : "/ventas/planilla";
+  const vendedorFijo = esAdmin ? undefined : { id: user.id, label: user.name ?? user.email ?? "Yo" };
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/ventas" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-brand">
+        <Link href={volverHref} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-brand">
           <ArrowLeft className="h-4 w-4" />
           Volver a ventas
         </Link>
@@ -38,6 +45,7 @@ export default async function EditarVentaPage({ params }: { params: Promise<{ id
         action={boundUpdate}
         submitLabel="Guardar cambios"
         vendedores={vendedores.map((u) => ({ id: u.id, label: u.nombre }))}
+        vendedorFijo={vendedorFijo}
         vehiculos={
           venta.vehiculo
             ? [
@@ -64,7 +72,7 @@ export default async function EditarVentaPage({ params }: { params: Promise<{ id
           vendedorId: venta.vendedorId,
           localVenta: venta.localVenta,
           comisionVentaUsd: centsToUnits(venta.comisionVentaUsdCents),
-          comisionTituloUsd: centsToUnits(venta.comisionTituloUsdCents),
+          comisionTituloPesos: centsToUnits(venta.comisionTituloPesosCents),
         }}
       />
     </div>

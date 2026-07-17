@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { assertCan, getEffectivePermissions } from "@/lib/permissions/engine";
 import { db } from "@/lib/db";
-import { formatCents } from "@/lib/money";
+import { formatCents, convertCents } from "@/lib/money";
 import { computeCosteo } from "@/lib/costeo";
 import { computeSaldos } from "@/lib/saldos";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -298,21 +298,26 @@ async function DashboardVendedor({ vendedorId }: { vendedorId: string }) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [ventasDelMes, ventasUltimos6Meses, accesoriosDelMes] = await Promise.all([
+  const [ventasDelMes, ventasUltimos6Meses, accesoriosDelMes, config] = await Promise.all([
     db.venta.findMany({ where: { vendedorId, fechaEntrega: { gte: monthStart } } }),
     db.venta.findMany({ where: { vendedorId, fechaEntrega: { gte: sixMonthsAgo } } }),
     db.ventaAccesorio.findMany({ where: { vendedorId, fecha: { gte: monthStart } } }),
+    db.configuracion.findUnique({ where: { id: 1 } }),
   ]);
+  const rateMicros = config?.tipoCambioGlobalMicros ?? 405_000;
 
   const comisionVehiculosDelMes = ventasDelMes.reduce(
-    (sum, v) => sum + v.comisionVentaUsdCents + v.comisionTituloUsdCents,
+    (sum, v) => sum + v.comisionVentaUsdCents + convertCents(v.comisionTituloPesosCents, "UYU", "USD", rateMicros),
     0,
   );
-  const comisionAccesoriosDelMes = accesoriosDelMes.reduce((sum, v) => sum + v.comisionAccesorioUsdCents, 0);
+  const comisionAccesoriosDelMes = accesoriosDelMes.reduce(
+    (sum, v) => sum + convertCents(v.comisionAccesorioCents, v.comisionAccesorioMoneda, "USD", rateMicros),
+    0,
+  );
   const chartData = buildChartData(
     ventasUltimos6Meses,
     now,
-    (v) => (v.comisionVentaUsdCents ?? 0) + (v.comisionTituloUsdCents ?? 0),
+    (v) => (v.comisionVentaUsdCents ?? 0) + convertCents(v.comisionTituloPesosCents ?? 0, "UYU", "USD", rateMicros),
   );
 
   return (
@@ -345,9 +350,9 @@ async function DashboardVendedor({ vendedorId }: { vendedorId: string }) {
 }
 
 function buildChartData(
-  ventas: { fechaEntrega: Date | null; precioVentaUsdCents: number; comisionVentaUsdCents?: number; comisionTituloUsdCents?: number }[],
+  ventas: { fechaEntrega: Date | null; precioVentaUsdCents: number; comisionVentaUsdCents?: number; comisionTituloPesosCents?: number }[],
   now: Date,
-  valueFn?: (v: { precioVentaUsdCents: number; comisionVentaUsdCents?: number; comisionTituloUsdCents?: number }) => number,
+  valueFn?: (v: { precioVentaUsdCents: number; comisionVentaUsdCents?: number; comisionTituloPesosCents?: number }) => number,
 ): VentasMes[] {
   const ventasPorMes = new Map<string, number>();
   for (let i = 5; i >= 0; i--) {

@@ -28,7 +28,7 @@ export const ventaSchema = z
     localVenta: localVentaEnum,
     propietarioVehiculo: z.string().trim().optional(),
     comisionVentaUsdCents: z.coerce.number().int().min(0).optional().default(0),
-    comisionTituloUsdCents: z.coerce.number().int().min(0).optional().default(0),
+    comisionTituloPesosCents: z.coerce.number().int().min(0).optional().default(0),
   })
   .refine((data) => Boolean(data.vehiculoId) || Boolean(data.vehiculoExterno), {
     message: "Elegí un vehículo del stock o describí el vehículo externo",
