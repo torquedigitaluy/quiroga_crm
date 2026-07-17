@@ -42,17 +42,21 @@ export function OrdenTallerForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [tiposSeleccionados, setTiposSeleccionados] = useState<string[]>(["MANTENIMIENTO"]);
-  const [vehDatos, setVehDatos] = useState({
-    marca: "",
-    modelo: "",
-    version: "",
-    anio: "",
-    color: "",
-    matricula: "",
-    km: "",
-  });
+  const EMPTY_VEH = { marca: "", modelo: "", version: "", anio: "", color: "", matricula: "", km: "" };
+  const [vehDatos, setVehDatos] = useState(EMPTY_VEH);
+  const [vehiculoId, setVehiculoId] = useState("");
+
+  // Al cambiar de origen se limpian los datos autocargados. Especialmente al
+  // pasar a "Vehículo externo": no deben quedar precargados datos de un auto de
+  // stock (evita que se guarde información equivocada).
+  const handleOrigenChange = (nuevo: "stock" | "externo") => {
+    setOrigen(nuevo);
+    setVehDatos(EMPTY_VEH);
+    setVehiculoId("");
+  };
 
   const handleSelectVehiculo = (id: string) => {
+    setVehiculoId(id);
     const v = vehiculos.find((x) => x.id === id);
     if (v) {
       setVehDatos({
@@ -88,10 +92,10 @@ export function OrdenTallerForm({
         <Label>Vehículo</Label>
         <input type="hidden" name="origenVehiculo" value={origen} />
         <div className="flex gap-2">
-          <Button type="button" variant={origen === "stock" ? "default" : "outline"} onClick={() => setOrigen("stock")}>
+          <Button type="button" variant={origen === "stock" ? "default" : "outline"} onClick={() => handleOrigenChange("stock")}>
             De stock
           </Button>
-          <Button type="button" variant={origen === "externo" ? "default" : "outline"} onClick={() => setOrigen("externo")}>
+          <Button type="button" variant={origen === "externo" ? "default" : "outline"} onClick={() => handleOrigenChange("externo")}>
             Vehículo externo
           </Button>
         </div>
@@ -100,7 +104,7 @@ export function OrdenTallerForm({
       {origen === "stock" ? (
         <div className="flex flex-col gap-1.5">
           <Label>Elegí el vehículo</Label>
-          <Select name="vehiculoId" onValueChange={handleSelectVehiculo}>
+          <Select name="vehiculoId" value={vehiculoId || undefined} onValueChange={handleSelectVehiculo}>
             <SelectTrigger>
               <SelectValue placeholder="Elegí un vehículo" />
             </SelectTrigger>

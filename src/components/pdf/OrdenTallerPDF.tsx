@@ -15,6 +15,9 @@ const styles = StyleSheet.create({
   smallValue: { flex: 1, fontSize: 9, fontWeight: 700 },
   checkRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 4 },
   checkItem: { fontSize: 9 },
+  imagesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 },
+  thumb: { width: 110, height: 82, objectFit: "cover", border: "0.5 solid #E3E6EC", borderRadius: 3 },
+  imgCatTitle: { fontSize: 8, color: "#667085", marginTop: 4, marginBottom: 2, fontWeight: 700 },
   tableHeader: { flexDirection: "row", borderBottom: "1 solid #1A1D29", paddingBottom: 3, marginBottom: 3 },
   tableRow: { flexDirection: "row", paddingVertical: 2, borderBottom: "0.5 solid #E3E6EC" },
   th: { fontSize: 8, fontWeight: 700, color: "#667085" },
@@ -55,6 +58,7 @@ export type OrdenTallerPdfData = {
   revisadoAt: Date | null;
   clienteFirmaDataUrl: string | null;
   clienteFirmaFecha: Date | null;
+  imagenes: { dataUrl: string; categoria: string }[];
 };
 
 const TIPO_SERVICIO_LABELS: Record<string, string> = {
@@ -63,6 +67,14 @@ const TIPO_SERVICIO_LABELS: Record<string, string> = {
   REPARACION: "Reparación",
   OTRO: "Otros",
 };
+
+// Orden y etiquetas de las categorías de fotos en el PDF.
+const CATEGORIA_IMAGEN: { key: string; label: string }[] = [
+  { key: "INGRESO", label: "Al ingresar" },
+  { key: "REPARACION", label: "Durante la reparación" },
+  { key: "FINALIZADO", label: "Al finalizar" },
+  { key: "OTRA", label: "Otras" },
+];
 
 function money(cents: number, moneda: string): string {
   const amount = (cents / 100).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -261,6 +273,26 @@ export function OrdenTallerPDF({ data }: { data: OrdenTallerPdfData }) {
           <>
             <Text style={pdfStyles.section}>Observaciones</Text>
             <Text style={pdfStyles.paragraph}>{data.observaciones}</Text>
+          </>
+        )}
+
+        {data.imagenes.length > 0 && (
+          <>
+            <Text style={pdfStyles.section}>Fotos del vehículo</Text>
+            {CATEGORIA_IMAGEN.map(({ key, label }) => {
+              const imgs = data.imagenes.filter((i) => i.categoria === key);
+              if (imgs.length === 0) return null;
+              return (
+                <View key={key} wrap={false}>
+                  <Text style={styles.imgCatTitle}>{label}</Text>
+                  <View style={styles.imagesGrid}>
+                    {imgs.map((img, i) => (
+                      <Image key={i} style={styles.thumb} src={img.dataUrl} />
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
           </>
         )}
 

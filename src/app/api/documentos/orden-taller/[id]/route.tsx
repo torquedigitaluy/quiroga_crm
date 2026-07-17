@@ -17,6 +17,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       checklist: { orderBy: { orden: "asc" } },
       tecnicoResponsable: true,
       revisadoPor: true,
+      imagenes: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -65,6 +66,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         revisadoAt: orden.revisadoAt,
         clienteFirmaDataUrl: orden.clienteFirmaDataUrl,
         clienteFirmaFecha: orden.clienteFirmaFecha,
+        imagenes: orden.imagenes.map((i) => ({ dataUrl: i.dataUrl, categoria: i.categoria })),
       }}
     />,
   );
