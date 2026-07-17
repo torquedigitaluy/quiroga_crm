@@ -81,12 +81,20 @@ export default async function PlanillaVentaPage() {
           </p>
         </div>
         <Can permission="ventas.create">
-          <Button asChild>
-            <Link href="/ventas/nueva">
-              <Plus className="h-4 w-4" />
-              Registrar venta
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/ventas/nueva">
+                <Plus className="h-4 w-4" />
+                Registrar venta
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/ventas/accesorios/nueva">
+                <Plus className="h-4 w-4" />
+                Registrar venta de accesorio
+              </Link>
+            </Button>
+          </div>
         </Can>
       </div>
 
@@ -208,10 +216,10 @@ export default async function PlanillaVentaPage() {
               {ventasAccesorio.map((v) => (
                 <TableRow key={v.id}>
                   <TableCell className="font-medium text-foreground">
-                    {v.accesorio.marca} {v.accesorio.modelo}
+                    {v.accesorio ? `${v.accesorio.marca} ${v.accesorio.modelo}` : v.accesorioExterno || "Producto"}
                   </TableCell>
                   <TableCell>{new Date(v.fecha).toLocaleDateString("es-UY")}</TableCell>
-                  <TableCell>{formatCents(v.precioVentaUsdCents, "USD")}</TableCell>
+                  <TableCell>{formatCents(v.precioVentaCents, v.precioVentaMoneda)}</TableCell>
                   <TableCell>{formatCents(v.comisionAccesorioCents, v.comisionAccesorioMoneda)}</TableCell>
                 </TableRow>
               ))}

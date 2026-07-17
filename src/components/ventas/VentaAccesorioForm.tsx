@@ -24,6 +24,7 @@ export function VentaAccesorioForm({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [origen, setOrigen] = useState<"stock" | "externo">("stock");
   const router = useRouter();
 
   const handleSubmit = (formData: FormData) => {
@@ -43,19 +44,31 @@ export function VentaAccesorioForm({
     <form action={handleSubmit} className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label>Accesorio</Label>
-          <Select name="accesorioId" required defaultValue={defaultAccesorioId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Elegí un accesorio del stock" />
-            </SelectTrigger>
-            <SelectContent>
-              {accesorios.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Producto</Label>
+          <div className="flex gap-2">
+            <Button type="button" variant={origen === "stock" ? "default" : "outline"} onClick={() => setOrigen("stock")}>
+              Del stock
+            </Button>
+            <Button type="button" variant={origen === "externo" ? "default" : "outline"} onClick={() => setOrigen("externo")}>
+              Otro producto
+            </Button>
+          </div>
+          {origen === "stock" ? (
+            <Select name="accesorioId" defaultValue={defaultAccesorioId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Elegí un accesorio del stock" />
+              </SelectTrigger>
+              <SelectContent>
+                {accesorios.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input name="accesorioExterno" placeholder="Nombre del producto" />
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -96,8 +109,19 @@ export function VentaAccesorioForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label>Precio de venta (USD)</Label>
-          <Input name="precioVentaUsdCents" type="number" step="0.01" required />
+          <Label>Precio de venta</Label>
+          <div className="flex gap-2">
+            <Input name="precioVentaCents" type="number" step="0.01" required className="flex-1" />
+            <Select name="precioVentaMoneda" defaultValue="USD">
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="UYU">$ (UYU)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Comisión por accesorio</Label>

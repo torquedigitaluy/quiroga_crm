@@ -74,6 +74,12 @@ export default async function VentasPage({
                   Registrar venta
                 </Link>
               </Button>
+              <Button variant="outline" asChild>
+                <Link href="/ventas/accesorios/nueva">
+                  <Plus className="h-4 w-4" />
+                  Registrar venta de accesorio
+                </Link>
+              </Button>
             </Can>
           )}
         </div>

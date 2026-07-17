@@ -422,18 +422,20 @@ model Venta {
 }
 
 model VentaAccesorio {
-  id                        String   @id @default(cuid())
-  accesorioId               String
-  accesorio                 Vehiculo @relation("AccesorioVentas", fields: [accesorioId], references: [id])
+  id                        String    @id @default(cuid())
+  accesorioId               String?
+  accesorio                 Vehiculo? @relation("AccesorioVentas", fields: [accesorioId], references: [id])
+  accesorioExterno          String?
   clienteId                 String?
-  cliente                   Cliente? @relation(fields: [clienteId], references: [id])
+  cliente                   Cliente?  @relation(fields: [clienteId], references: [id])
   vendedorId                String?
-  vendedor                  User?    @relation("VendedorVentasAccesorio", fields: [vendedorId], references: [id])
-  fecha                     DateTime @default(now())
-  precioVentaUsdCents       Int
-  comisionAccesorioCents    Int      @default(0)
-  comisionAccesorioMoneda   Moneda   @default(USD)
-  createdAt                 DateTime @default(now())
+  vendedor                  User?     @relation("VendedorVentasAccesorio", fields: [vendedorId], references: [id])
+  fecha                     DateTime  @default(now())
+  precioVentaCents          Int
+  precioVentaMoneda         Moneda    @default(USD)
+  comisionAccesorioCents    Int       @default(0)
+  comisionAccesorioMoneda   Moneda    @default(USD)
+  createdAt                 DateTime  @default(now())
 
   @@index([fecha])
   @@index([vendedorId])
