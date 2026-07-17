@@ -1,10 +1,14 @@
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, can } from "@/lib/permissions/engine";
 import { VentaForm } from "@/components/ventas/VentaForm";
 import { createVenta } from "../actions";
 
 export default async function NuevaVentaPage() {
-  await assertCan("ventas.create");
+  const user = await assertCan("ventas.create");
+  // Quien no tiene acceso al listado completo de ventas es un vendedor
+  // registrando su propia venta: el campo "vendedor" queda fijo en sí mismo,
+  // no puede asignarla a otro vendedor.
+  const esAdmin = await can("ventas.view_full");
 
   const [vehiculos, usuarios] = await Promise.all([
     // El estado del vehículo en Stock (incl. "Señado") no debe impedir crear
@@ -13,8 +17,12 @@ export default async function NuevaVentaPage() {
       where: { esVehiculo: true, estado: { not: "VENDIDO" }, archivedAt: null },
       orderBy: { marca: "asc" },
     }),
-    db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } }),
+    esAdmin
+      ? db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } })
+      : Promise.resolve([]),
   ]);
+
+  const vendedorFijo = esAdmin ? undefined : { id: user.id, label: user.name ?? user.email ?? "Yo" };
 
   return (
     <div className="flex flex-col gap-6">
@@ -31,6 +39,7 @@ export default async function NuevaVentaPage() {
           propietario: v.propietario,
         }))}
         vendedores={usuarios.map((u) => ({ id: u.id, label: u.nombre }))}
+        vendedorFijo={vendedorFijo}
         action={createVenta}
       />
     </div>

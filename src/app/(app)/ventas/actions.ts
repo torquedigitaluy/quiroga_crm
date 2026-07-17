@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, can } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
 import { logAudit } from "@/lib/audit";
@@ -83,7 +83,8 @@ export async function createVenta(formData: FormData) {
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");
   revalidatePath("/stock");
-  redirect("/ventas");
+  // Un vendedor sin acceso al listado completo vuelve a su propia planilla.
+  redirect((await can("ventas.view_full")) ? "/ventas" : "/ventas/planilla");
 }
 
 export async function updateVenta(id: string, formData: FormData) {

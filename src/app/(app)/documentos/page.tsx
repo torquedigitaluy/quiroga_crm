@@ -13,6 +13,7 @@ import { archiveVale } from "./vale/actions";
 export default async function DocumentosPage() {
   await assertCan("docs.generate");
   const puedeVale = await can("docs.generate_vale");
+  const puedeVerConformes = await can("docs.view_conformes");
 
   const [promesas, promesasArchivadas, conformes, vales] = await Promise.all([
     db.promesaCompraventa.findMany({
@@ -25,11 +26,13 @@ export default async function DocumentosPage() {
       orderBy: { archivedAt: "desc" },
       take: 30,
     }),
-    db.conforme.findMany({
-      include: { financiacionPropia: true, cuota: true },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
+    puedeVerConformes
+      ? db.conforme.findMany({
+          include: { financiacionPropia: true, cuota: true },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        })
+      : Promise.resolve([]),
     puedeVale
       ? db.vale.findMany({ where: { archivedAt: null }, include: { cliente: true }, orderBy: { createdAt: "desc" }, take: 30 })
       : Promise.resolve([]),
@@ -138,45 +141,47 @@ export default async function DocumentosPage() {
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-foreground">Conformes generados</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Plan</TableHead>
-              <TableHead>Cuota</TableHead>
-              <TableHead>Vencimiento</TableHead>
-              <TableHead>Fecha de Pago</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {conformes.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="font-medium text-foreground">{c.financiacionPropia.nombre}</TableCell>
-                <TableCell>{c.cuota ? `# ${c.cuota.numero}` : "—"}</TableCell>
-                <TableCell>{new Date(c.fechaVencimiento).toLocaleDateString("es-UY")}</TableCell>
-                <TableCell>{new Date(c.fechaPago).toLocaleDateString("es-UY")}</TableCell>
-                <TableCell>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`/api/documentos/conforme/${c.id}`} target="_blank" rel="noopener noreferrer">
-                      <FileDown className="h-3.5 w-3.5" />
-                      PDF
-                    </a>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {conformes.length === 0 && (
+      {puedeVerConformes && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold text-foreground">Conformes generados</h2>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
-                  No hay conformes generados todavía. Se generan desde Financiación Propia → Cuotas.
-                </TableCell>
+                <TableHead>Plan</TableHead>
+                <TableHead>Cuota</TableHead>
+                <TableHead>Vencimiento</TableHead>
+                <TableHead>Fecha de Pago</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </section>
+            </TableHeader>
+            <TableBody>
+              {conformes.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium text-foreground">{c.financiacionPropia.nombre}</TableCell>
+                  <TableCell>{c.cuota ? `# ${c.cuota.numero}` : "—"}</TableCell>
+                  <TableCell>{new Date(c.fechaVencimiento).toLocaleDateString("es-UY")}</TableCell>
+                  <TableCell>{new Date(c.fechaPago).toLocaleDateString("es-UY")}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`/api/documentos/conforme/${c.id}`} target="_blank" rel="noopener noreferrer">
+                        <FileDown className="h-3.5 w-3.5" />
+                        PDF
+                      </a>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {conformes.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                    No hay conformes generados todavía. Se generan desde Financiación Propia → Cuotas.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       {puedeVale && (
         <section className="flex flex-col gap-3">

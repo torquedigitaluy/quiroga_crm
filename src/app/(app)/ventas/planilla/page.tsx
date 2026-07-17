@@ -1,9 +1,13 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Can } from "@/components/auth/Can";
 
 export default async function PlanillaVentaPage() {
   const user = await assertCan("ventas.view_own");
@@ -58,16 +62,26 @@ export default async function PlanillaVentaPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Mi Planilla de Venta</h1>
-        <p className="text-sm text-muted-foreground">
-          {ventas.length} ventas de vehículos · {ventasAccesorio.length} ventas de accesorios · Comisiones
-          acumuladas: {formatCents(totalComisiones, "USD")} (vehículos {formatCents(totalComisionVehiculos, "USD")} +
-          accesorios {formatCents(totalComisionAccesorios, "USD")})
-        </p>
-        <p className="text-xs text-muted-foreground">
-          La comisión de un vehículo se cuenta recién cuando se entrega, no cuando se registra la venta.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Mi Planilla de Venta</h1>
+          <p className="text-sm text-muted-foreground">
+            {ventas.length} ventas de vehículos · {ventasAccesorio.length} ventas de accesorios · Comisiones
+            acumuladas: {formatCents(totalComisiones, "USD")} (vehículos {formatCents(totalComisionVehiculos, "USD")} +
+            accesorios {formatCents(totalComisionAccesorios, "USD")})
+          </p>
+          <p className="text-xs text-muted-foreground">
+            La comisión de un vehículo se cuenta recién cuando se entrega, no cuando se registra la venta.
+          </p>
+        </div>
+        <Can permission="ventas.create">
+          <Button asChild>
+            <Link href="/ventas/nueva">
+              <Plus className="h-4 w-4" />
+              Registrar venta
+            </Link>
+          </Button>
+        </Can>
       </div>
 
       <Card>

@@ -66,6 +66,7 @@ export const PERMISSIONS: PermissionDef[] = [
   // Documentos
   { key: "docs.generate", label: "Generar documentos", grupo: "Documentos" },
   { key: "docs.generate_vale", label: "Generar y ver vales de financiación", grupo: "Documentos" },
+  { key: "docs.view_conformes", label: "Ver los conformes generados (solo Super Admin)", grupo: "Documentos" },
   { key: "docs.template_edit", label: "Editar plantillas de documentos", grupo: "Documentos" },
 
   // Clientes
@@ -114,6 +115,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.move_location",
     "stock.edit_status",
     "ventas.view_own",
+    "ventas.create",
     "taller.view_ordenes",
     "docs.generate",
   ],

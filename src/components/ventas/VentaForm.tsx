@@ -36,12 +36,15 @@ export function VentaForm({
   action,
   initial,
   submitLabel,
+  vendedorFijo,
 }: {
   vehiculos: VehiculoOption[];
   vendedores: VendedorOption[];
   action: (formData: FormData) => Promise<void>;
   initial?: VentaInitial;
   submitLabel?: string;
+  /** Si viene seteado, un vendedor está registrando su propia venta: el campo queda fijo, no editable. */
+  vendedorFijo?: { id: string; label: string };
 }) {
   const isEdit = Boolean(initial?.id);
   const [error, setError] = useState<string | null>(null);
@@ -170,18 +173,25 @@ export function VentaForm({
 
         <div className="flex flex-col gap-1.5">
           <Label>Vendedor</Label>
-          <Select name="vendedorId" defaultValue={initial?.vendedorId ?? undefined}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sin asignar" />
-            </SelectTrigger>
-            <SelectContent>
-              {vendedores.map((v) => (
-                <SelectItem key={v.id} value={v.id}>
-                  {v.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {vendedorFijo ? (
+            <>
+              <Input value={vendedorFijo.label} disabled readOnly />
+              <input type="hidden" name="vendedorId" value={vendedorFijo.id} />
+            </>
+          ) : (
+            <Select name="vendedorId" defaultValue={initial?.vendedorId ?? undefined}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sin asignar" />
+              </SelectTrigger>
+              <SelectContent>
+                {vendedores.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Propietario del vehículo</Label>
