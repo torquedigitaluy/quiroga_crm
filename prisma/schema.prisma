@@ -743,7 +743,9 @@ model PromesaCompraventa {
   costoTitulosUsdCents         Int?
   costoTitulosMoneda           Moneda @default(USD)
   cartaPagoUsdCents             Int?
+  cartaPagoMoneda               Moneda @default(USD)
   entregaCuentaTitulosUsdCents Int?
+  entregaCuentaTitulosMoneda   Moneda @default(USD)
 
   // Seguro
   seguro       Boolean @default(false)

@@ -3,32 +3,34 @@ import { PdfHeader } from "./PdfHeader";
 import { pdfStyles } from "./shared";
 
 const styles = StyleSheet.create({
-  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  metaItem: { fontSize: 9, color: "#667085" },
+  // Página compacta (menos padding que el estándar) para que todo entre en 1 hoja.
+  page: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 30, fontSize: 9, fontFamily: "Helvetica", color: "#1A1D29" },
+  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 5 },
+  metaItem: { fontSize: 8.5, color: "#667085" },
   metaValue: { fontWeight: 700, color: "#1A1D29" },
   twoCol: { flexDirection: "row", gap: 12 },
   threeCol: { flexDirection: "row", gap: 10 },
   col: { flex: 1 },
-  box: { border: "1 solid #E3E6EC", borderRadius: 4, padding: 7, marginBottom: 7 },
-  boxTitle: { fontSize: 8.5, fontWeight: 700, color: "#0936B3", marginBottom: 4, textTransform: "uppercase" },
-  smallRow: { flexDirection: "row", marginBottom: 2.5 },
-  smallLabel: { width: 96, fontSize: 8.5, color: "#667085" },
-  smallValue: { flex: 1, fontSize: 8.5, fontWeight: 700 },
+  box: { border: "1 solid #E3E6EC", borderRadius: 3, padding: 6, marginBottom: 4 },
+  boxTitle: { fontSize: 8, fontWeight: 700, color: "#0936B3", marginBottom: 3, textTransform: "uppercase" },
+  smallRow: { flexDirection: "row", marginBottom: 1.5 },
+  smallLabel: { width: 90, fontSize: 8, color: "#667085" },
+  smallValue: { flex: 1, fontSize: 8, fontWeight: 700 },
   // Fila apilada (para cajas angostas: evita que label y valor se superpongan).
-  stackRow: { marginBottom: 3 },
-  stackLabel: { fontSize: 7, color: "#667085", textTransform: "uppercase" },
-  stackValue: { fontSize: 9, fontWeight: 700 },
-  siNo: { fontSize: 8.5, fontWeight: 700, marginBottom: 4 },
-  tableHeader: { flexDirection: "row", borderBottom: "1 solid #1A1D29", paddingBottom: 2, marginBottom: 2 },
-  tableRow: { flexDirection: "row", paddingVertical: 1.5, borderBottom: "0.5 solid #E3E6EC" },
-  th: { fontSize: 8, fontWeight: 700, color: "#667085" },
-  td: { fontSize: 8.5 },
-  sectionTitle: { marginTop: 8, marginBottom: 4, fontSize: 10, fontWeight: 700, color: "#0936B3" },
-  legalClause: { fontSize: 7.5, lineHeight: 1.35, color: "#1A1D29", marginBottom: 3, textAlign: "justify" },
-  signaturesRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 22, gap: 20 },
+  stackRow: { marginBottom: 2 },
+  stackLabel: { fontSize: 6.5, color: "#667085", textTransform: "uppercase" },
+  stackValue: { fontSize: 8.5, fontWeight: 700 },
+  siNo: { fontSize: 8, fontWeight: 700, marginBottom: 3 },
+  tableHeader: { flexDirection: "row", borderBottom: "1 solid #1A1D29", paddingBottom: 1.5, marginBottom: 1.5 },
+  tableRow: { flexDirection: "row", paddingVertical: 1, borderBottom: "0.5 solid #E3E6EC" },
+  th: { fontSize: 7.5, fontWeight: 700, color: "#667085" },
+  td: { fontSize: 8 },
+  sectionTitle: { marginTop: 5, marginBottom: 2, fontSize: 9, fontWeight: 700, color: "#0936B3" },
+  legalClause: { fontSize: 7, lineHeight: 1.25, color: "#1A1D29", marginBottom: 2, textAlign: "justify" },
+  signaturesRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, gap: 20 },
   signatureBox: { flex: 1, alignItems: "center" },
-  signatureLine: { borderTop: "1 solid #1A1D29", width: "100%", marginTop: 24, paddingTop: 3 },
-  signatureName: { fontSize: 9, marginTop: 2 },
+  signatureLine: { borderTop: "1 solid #1A1D29", width: "100%", marginTop: 14, paddingTop: 3 },
+  signatureName: { fontSize: 8.5, marginTop: 2 },
 });
 
 export type PromesaPdfData = {
@@ -65,7 +67,9 @@ export type PromesaPdfData = {
   costoTitulosUsdCents: number | null;
   costoTitulosMoneda: string;
   cartaPagoUsdCents: number | null;
+  cartaPagoMoneda: string;
   entregaCuentaTitulosUsdCents: number | null;
+  entregaCuentaTitulosMoneda: string;
   seguro: boolean;
   aseguradora: string | null;
   cobertura: string | null;
@@ -126,7 +130,7 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
 
   return (
     <Document>
-      <Page size="A4" style={pdfStyles.page}>
+      <Page size="A4" style={styles.page}>
         <PdfHeader title="Promesa de Compra-Venta" />
 
         <View style={styles.metaRow}>
@@ -204,8 +208,8 @@ export function PromesaPDF({ data }: { data: PromesaPdfData }) {
             <View style={styles.box}>
               <Text style={styles.boxTitle}>Documentación</Text>
               <StackRow label="Costo de títulos" value={money(data.costoTitulosUsdCents, data.costoTitulosMoneda)} />
-              <StackRow label="Carta de pago" value={money(data.cartaPagoUsdCents)} />
-              <StackRow label="Entrega a cta. títulos" value={money(data.entregaCuentaTitulosUsdCents)} />
+              <StackRow label="Carta de pago" value={money(data.cartaPagoUsdCents, data.cartaPagoMoneda)} />
+              <StackRow label="Entrega a cta. títulos" value={money(data.entregaCuentaTitulosUsdCents, data.entregaCuentaTitulosMoneda)} />
             </View>
           </View>
           <View style={styles.col}>

@@ -69,7 +69,9 @@ export type PromesaFormValues = {
   costoTitulosUsdCents: string;
   costoTitulosMoneda: string;
   cartaPagoUsdCents: string;
+  cartaPagoMoneda: string;
   entregaCuentaTitulosUsdCents: string;
+  entregaCuentaTitulosMoneda: string;
   aseguradora: string;
   cobertura: string;
   cesionANombreDe: string;
@@ -116,7 +118,9 @@ const EMPTY: PromesaFormValues = {
   costoTitulosUsdCents: "",
   costoTitulosMoneda: "USD",
   cartaPagoUsdCents: "",
+  cartaPagoMoneda: "USD",
   entregaCuentaTitulosUsdCents: "",
+  entregaCuentaTitulosMoneda: "USD",
   aseguradora: "",
   cobertura: "",
   cesionANombreDe: "",
@@ -153,6 +157,43 @@ function MoneyField({
         value={values[field]}
         onChange={(e) => onChange(field, e.target.value)}
       />
+    </div>
+  );
+}
+
+function MoneyMonedaField({
+  label,
+  name,
+  monedaName,
+  value,
+  onChange,
+  moneda,
+  setMoneda,
+}: {
+  label: string;
+  name: string;
+  monedaName: string;
+  value: string;
+  onChange: (value: string) => void;
+  moneda: string;
+  setMoneda: (m: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <div className="flex gap-2">
+        <Input name={name} type="number" step="0.01" value={value} onChange={(e) => onChange(e.target.value)} />
+        <input type="hidden" name={monedaName} value={moneda} />
+        <Select value={moneda} onValueChange={setMoneda}>
+          <SelectTrigger className="w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="UYU">$</SelectItem>
+            <SelectItem value="USD">USD</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }
@@ -209,6 +250,8 @@ export function PromesaForm({
   const [vehiculoId, setVehiculoId] = useState(initialVehiculoId ?? "");
   const [origenVeh, setOrigenVeh] = useState<"stock" | "externo">(initialVehiculoId ? "stock" : "externo");
   const [costoMoneda, setCostoMoneda] = useState(initial?.costoTitulosMoneda ?? "USD");
+  const [cartaMoneda, setCartaMoneda] = useState(initial?.cartaPagoMoneda ?? "USD");
+  const [entregaMoneda, setEntregaMoneda] = useState(initial?.entregaCuentaTitulosMoneda ?? "USD");
   const [financia, setFinancia] = useState(initialFinancia ?? false);
   const [seguro, setSeguro] = useState(initialSeguro ?? false);
   const [cesion, setCesion] = useState(initialCesion ?? false);
@@ -414,30 +457,33 @@ export function PromesaForm({
 
       <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
         <legend className="px-1 text-sm font-semibold text-foreground">Documentación</legend>
-        <div className="flex flex-col gap-1.5">
-          <Label>Costo de títulos</Label>
-          <div className="flex gap-2">
-            <Input
-              name="costoTitulosUsdCents"
-              type="number"
-              step="0.01"
-              value={values.costoTitulosUsdCents}
-              onChange={(e) => update("costoTitulosUsdCents", e.target.value)}
-            />
-            <input type="hidden" name="costoTitulosMoneda" value={costoMoneda} />
-            <Select value={costoMoneda} onValueChange={setCostoMoneda}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="UYU">$</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <MoneyField label="Carta de pago" field="cartaPagoUsdCents" values={values} onChange={update} />
-        <MoneyField label="Entrega a cuenta de títulos" field="entregaCuentaTitulosUsdCents" values={values} onChange={update} />
+        <MoneyMonedaField
+          label="Costo de títulos"
+          name="costoTitulosUsdCents"
+          monedaName="costoTitulosMoneda"
+          value={values.costoTitulosUsdCents}
+          onChange={(v) => update("costoTitulosUsdCents", v)}
+          moneda={costoMoneda}
+          setMoneda={setCostoMoneda}
+        />
+        <MoneyMonedaField
+          label="Carta de pago"
+          name="cartaPagoUsdCents"
+          monedaName="cartaPagoMoneda"
+          value={values.cartaPagoUsdCents}
+          onChange={(v) => update("cartaPagoUsdCents", v)}
+          moneda={cartaMoneda}
+          setMoneda={setCartaMoneda}
+        />
+        <MoneyMonedaField
+          label="Entrega a cuenta de títulos"
+          name="entregaCuentaTitulosUsdCents"
+          monedaName="entregaCuentaTitulosMoneda"
+          value={values.entregaCuentaTitulosUsdCents}
+          onChange={(v) => update("entregaCuentaTitulosUsdCents", v)}
+          moneda={entregaMoneda}
+          setMoneda={setEntregaMoneda}
+        />
       </fieldset>
 
       <fieldset className="flex flex-col gap-4 rounded-lg border border-border p-4">

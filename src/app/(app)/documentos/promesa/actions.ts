@@ -33,8 +33,11 @@ function bool(formData: FormData, field: string): boolean {
 function buildData(formData: FormData) {
   const conformesCantidadCuotas = intOrNull(formData, "conformesCantidadCuotas");
   const conformesCuotaUsdCents = centsOrNull(formData, "conformesCuotaUsdCents");
-  const costoTitulosMonedaRaw = String(formData.get("costoTitulosMoneda") ?? "USD");
-  const costoTitulosMoneda: "UYU" | "USD" = costoTitulosMonedaRaw === "UYU" ? "UYU" : "USD";
+  const moneda = (field: string): "UYU" | "USD" =>
+    String(formData.get(field) ?? "USD") === "UYU" ? "UYU" : "USD";
+  const costoTitulosMoneda = moneda("costoTitulosMoneda");
+  const cartaPagoMoneda = moneda("cartaPagoMoneda");
+  const entregaCuentaTitulosMoneda = moneda("entregaCuentaTitulosMoneda");
   return {
     ventaId: str(formData, "ventaId"),
     vehiculoId: str(formData, "vehiculoId"),
@@ -80,7 +83,9 @@ function buildData(formData: FormData) {
     costoTitulosUsdCents: centsOrNull(formData, "costoTitulosUsdCents"),
     costoTitulosMoneda,
     cartaPagoUsdCents: centsOrNull(formData, "cartaPagoUsdCents"),
+    cartaPagoMoneda,
     entregaCuentaTitulosUsdCents: centsOrNull(formData, "entregaCuentaTitulosUsdCents"),
+    entregaCuentaTitulosMoneda,
 
     seguro: bool(formData, "seguro"),
     aseguradora: str(formData, "aseguradora"),
