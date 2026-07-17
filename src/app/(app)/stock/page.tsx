@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { StatusBadge, UbicacionBadge } from "@/components/stock/StatusBadge";
+import { StatusBadge } from "@/components/stock/StatusBadge";
 import { StockSortSelect } from "@/components/stock/StockSortSelect";
+import { StockDraggableBody } from "@/components/stock/StockDraggableBody";
 import { Can } from "@/components/auth/Can";
 import { RestoreButton } from "@/components/ui/RestoreButton";
 import { restoreVehiculo } from "./actions";
@@ -38,14 +39,16 @@ const ESTADO_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const SORT_FIELD_MAP: Record<string, string> = {
+  manual: "orden",
   fechaIngreso: "fechaIngreso",
   precio: "precioVentaUsdCents",
   marca: "marca",
 };
 
+// Por defecto se muestra el orden manual (el que se arma con drag & drop).
 function parseSortCombo(sortCombo: string | undefined): { key: string; field: string; dir: "asc" | "desc" } {
-  const [key, dir] = (sortCombo ?? "fechaIngreso_asc").split("_");
-  const field = SORT_FIELD_MAP[key] ?? "fechaIngreso";
+  const [key, dir] = (sortCombo ?? "manual_asc").split("_");
+  const field = SORT_FIELD_MAP[key] ?? "orden";
   return { key, field, dir: dir === "desc" ? "desc" : "asc" };
 }
 
@@ -76,6 +79,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const sortInfo = parseSortCombo(sp.sortCombo);
   const puedeVender = await can("ventas.create");
   const puedeArchivar = await can("stock.delete");
+  // El drag & drop solo tiene sentido cuando el listado está en orden manual.
+  const puedeOrdenar = (await can("stock.edit_vehicle_fields")) && sortInfo.key === "manual";
 
   const [vehiculos, accesorios, archivados, marcasRows, modelosRows] = await Promise.all([
     db.vehiculo.findMany({
@@ -214,9 +219,17 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
             </Can>
           </div>
 
+          {puedeOrdenar && (
+            <p className="text-xs text-muted-foreground">
+              Arrastrá las filas desde el ícono <span className="font-medium">⠿</span> para ordenar los vehículos como
+              quieras. El orden se guarda y se mantiene aunque cambies los filtros.
+            </p>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
+                {puedeOrdenar && <TableHead className="w-8" />}
                 <TableHead>{sortLink(sp, sortInfo, "marca", "Marca / Modelo")}</TableHead>
                 <TableHead>Año</TableHead>
                 <TableHead>Color</TableHead>
@@ -228,37 +241,24 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
                 <TableHead>{sortLink(sp, sortInfo, "fechaIngreso", "Ingreso")}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {vehiculos.map((v) => (
-                <TableRow key={v.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link href={`/stock/${v.id}`} className="font-medium text-foreground hover:text-brand">
-                      {v.marca} {v.modelo}
-                    </Link>
-                    {v.version && <div className="text-xs text-muted-foreground">{v.version}</div>}
-                  </TableCell>
-                  <TableCell>{v.anio ?? "—"}</TableCell>
-                  <TableCell>{v.color ?? "—"}</TableCell>
-                  <TableCell>{v.km?.toLocaleString("es-UY") ?? "—"}</TableCell>
-                  <TableCell>
-                    <UbicacionBadge ubicacion={v.ubicacion} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge estado={v.estado} />
-                  </TableCell>
-                  <TableCell>{v.precioVentaUsdCents ? formatCents(v.precioVentaUsdCents, "USD") : "—"}</TableCell>
-                  <TableCell>{v.matricula ?? "—"}</TableCell>
-                  <TableCell>{new Date(v.fechaIngreso).toLocaleDateString("es-UY")}</TableCell>
-                </TableRow>
-              ))}
-              {vehiculos.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                    No hay vehículos que coincidan con la búsqueda.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+            <StockDraggableBody
+              draggable={puedeOrdenar}
+              colSpan={puedeOrdenar ? 10 : 9}
+              rows={vehiculos.map((v) => ({
+                id: v.id,
+                marca: v.marca,
+                modelo: v.modelo,
+                version: v.version,
+                anio: v.anio,
+                color: v.color,
+                km: v.km,
+                ubicacion: v.ubicacion,
+                estado: v.estado,
+                precioVentaUsdCents: v.precioVentaUsdCents,
+                matricula: v.matricula,
+                fechaIngreso: v.fechaIngreso.toISOString(),
+              }))}
+            />
           </Table>
         </TabsContent>
 

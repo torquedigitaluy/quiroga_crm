@@ -311,6 +311,8 @@ model Vehiculo {
   esVehiculo          Boolean        @default(true)
   estado              EstadoVehiculo @default(APRONTANDO)
   fechaIngreso        DateTime       @default(now())
+  // Orden manual del listado de stock (drag & drop). Menor = más arriba.
+  orden               Int            @default(0)
   responsableId       String?
   responsable         User?          @relation("VehiculoResponsable", fields: [responsableId], references: [id])
   archivedAt          DateTime?
@@ -331,6 +333,7 @@ model Vehiculo {
   @@index([matricula])
   @@index([marca])
   @@index([estado])
+  @@index([orden])
 }
 
 model Cliente {

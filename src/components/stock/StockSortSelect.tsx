@@ -1,6 +1,7 @@
 "use client";
 
 const SORT_OPTIONS = [
+  { value: "manual_asc", label: "Orden manual (arrastrable)" },
   { value: "fechaIngreso_asc", label: "Ingreso: más antiguo primero" },
   { value: "fechaIngreso_desc", label: "Ingreso: más nuevo primero" },
   { value: "precio_asc", label: "Precio: menor a mayor" },

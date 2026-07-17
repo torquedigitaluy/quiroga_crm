@@ -13,7 +13,12 @@ export default async function FinanciacionPropiaDetailPage({ params }: { params:
 
   const financiacion = await db.financiacionPropia.findUnique({
     where: { id },
-    include: { cliente: true, vehiculo: true, cuotas: { orderBy: { numero: "asc" } } },
+    include: {
+      cliente: true,
+      vehiculo: true,
+      // Se incluye el conforme de cada cuota para saber si ya fue generado.
+      cuotas: { orderBy: { numero: "asc" }, include: { conforme: { select: { id: true } } } },
+    },
   });
   if (!financiacion) notFound();
 
@@ -55,7 +60,7 @@ export default async function FinanciacionPropiaDetailPage({ params }: { params:
         <h2 className="mb-3 text-lg font-semibold text-foreground">Cuotas</h2>
         <CuotasGrid
           financiacionId={financiacion.id}
-          cuotas={financiacion.cuotas}
+          cuotas={financiacion.cuotas.map((c) => ({ ...c, conformeId: c.conforme?.id ?? null }))}
           editable={editable}
           canGenerateConforme={canGenerateConforme}
           clienteNombre={financiacion.nombre}

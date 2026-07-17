@@ -65,7 +65,12 @@ export async function createVehiculo(formData: FormData) {
   if (!parsed.success) {
     throw new Error(parsed.error.issues.map((i) => i.message).join(", "));
   }
-  const vehiculo = await db.vehiculo.create({ data: parsed.data });
+  // Va al final del orden manual, con hueco para que el drag & drop siempre
+  // tenga slots distintos con los que reordenar.
+  const ultimo = await db.vehiculo.findFirst({ orderBy: { orden: "desc" }, select: { orden: true } });
+  const vehiculo = await db.vehiculo.create({
+    data: { ...parsed.data, orden: (ultimo?.orden ?? 0) + 100 },
+  });
   await logAudit({
     accion: "CREAR",
     entidad: "Vehículo",
@@ -110,6 +115,31 @@ export async function updateVehiculo(id: string, formData: FormData) {
   });
   revalidatePath("/stock");
   revalidatePath(`/stock/${id}`);
+}
+
+/**
+ * Reordena el listado de stock (drag & drop). Recibe los ids visibles en su
+ * nuevo orden y les reasigna los mismos "slots" de orden que ya ocupaban entre
+ * ellos. Así el orden manual funciona aunque haya filtros aplicados: los
+ * vehículos que no se ven no cambian de lugar.
+ */
+export async function reordenarVehiculos(ids: string[]) {
+  await assertCan("stock.edit_vehicle_fields");
+  if (ids.length < 2) return;
+
+  const vehiculos = await db.vehiculo.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, orden: true },
+  });
+  if (vehiculos.length !== ids.length) throw new Error("Alguno de los vehículos ya no existe.");
+
+  const slots = vehiculos.map((v) => v.orden).sort((a, b) => a - b);
+
+  await db.$transaction(
+    ids.map((id, i) => db.vehiculo.update({ where: { id }, data: { orden: slots[i] } })),
+  );
+
+  revalidatePath("/stock");
 }
 
 export async function deleteVehiculo(id: string) {

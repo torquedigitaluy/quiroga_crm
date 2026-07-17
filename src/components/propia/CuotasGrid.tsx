@@ -17,6 +17,8 @@ export type CuotaData = {
   montoCents: number;
   fechaVencimiento: Date;
   pagada: boolean;
+  /** Id del conforme ya generado para esta cuota (una cuota = un conforme). */
+  conformeId?: string | null;
 };
 
 export function CuotasGrid({
@@ -86,12 +88,28 @@ export function CuotasGrid({
               </TableCell>
               {canGenerateConforme && (
                 <TableCell>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`/propia/${financiacionId}/conforme/${c.id}`}>
+                  {c.conformeId ? (
+                    // Ya existe un conforme para esta cuota: se abre, no se crea otro.
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`/propia/conformes/${c.conformeId}`}>
+                        <FileText className="h-3.5 w-3.5" />
+                        Ver conforme
+                      </a>
+                    </Button>
+                  ) : c.pagada ? (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`/propia/${financiacionId}/conforme/${c.id}`}>
+                        <FileText className="h-3.5 w-3.5" />
+                        Generar
+                      </a>
+                    </Button>
+                  ) : (
+                    // Solo se genera el conforme de una cuota que ya está paga.
+                    <Button variant="outline" size="sm" disabled title="Marcá la cuota como pagada para generar el conforme">
                       <FileText className="h-3.5 w-3.5" />
                       Generar
-                    </a>
-                  </Button>
+                    </Button>
+                  )}
                 </TableCell>
               )}
               <TableCell>

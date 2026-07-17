@@ -162,7 +162,18 @@ function conformeData(formData: FormData) {
 export async function generateConforme(financiacionPropiaId: string, cuotaId: string, formData: FormData) {
   await assertCan("conforme.generate");
 
-  const financiacion = await db.financiacionPropia.findUniqueOrThrow({ where: { id: financiacionPropiaId } });
+  const [financiacion, cuota, existente] = await Promise.all([
+    db.financiacionPropia.findUniqueOrThrow({ where: { id: financiacionPropiaId } }),
+    db.cuotaPropia.findUniqueOrThrow({ where: { id: cuotaId } }),
+    db.conforme.findUnique({ where: { cuotaId } }),
+  ]);
+
+  // Una cuota tiene un solo conforme: si ya existe, se abre en vez de duplicar.
+  if (existente) redirect(`/propia/conformes/${existente.id}`);
+
+  if (!cuota.pagada) {
+    throw new Error("Marcá la cuota como pagada antes de generar el conforme.");
+  }
 
   const conforme = await db.conforme.create({
     data: {
