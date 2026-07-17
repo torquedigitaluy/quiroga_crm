@@ -65,6 +65,7 @@ export const PERMISSIONS: PermissionDef[] = [
 
   // Documentos
   { key: "docs.generate", label: "Generar documentos", grupo: "Documentos" },
+  { key: "docs.generate_vale", label: "Generar y ver vales de financiación", grupo: "Documentos" },
   { key: "docs.template_edit", label: "Editar plantillas de documentos", grupo: "Documentos" },
 
   // Clientes
@@ -106,6 +107,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
   VENDEDOR: [
     "dashboard.view",
     "stock.view",
+    "stock.create",
     "stock.edit_vehicle_fields",
     "stock.edit_price",
     "stock.edit_patente",
@@ -113,6 +115,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "stock.edit_status",
     "ventas.view_own",
     "taller.view_ordenes",
+    "docs.generate",
   ],
   CONTADORA: [
     "dashboard.view",
@@ -151,6 +154,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "deudas.view",
     "deudas.edit",
     "docs.generate",
+    "docs.generate_vale",
     "clientes.view",
     "audit.view",
     "taller.view",

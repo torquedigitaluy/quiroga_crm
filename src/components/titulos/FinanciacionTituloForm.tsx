@@ -17,6 +17,7 @@ export function FinanciacionTituloForm({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [origen, setOrigen] = useState<"stock" | "externo">("stock");
 
   const handleSubmit = (formData: FormData) => {
     setError(null);
@@ -35,18 +36,30 @@ export function FinanciacionTituloForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label>Vehículo</Label>
-          <Select name="vehiculoId" required>
-            <SelectTrigger>
-              <SelectValue placeholder="Elegí un vehículo" />
-            </SelectTrigger>
-            <SelectContent>
-              {vehiculos.map((v) => (
-                <SelectItem key={v.id} value={v.id}>
-                  {v.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Button type="button" variant={origen === "stock" ? "default" : "outline"} onClick={() => setOrigen("stock")}>
+              De stock
+            </Button>
+            <Button type="button" variant={origen === "externo" ? "default" : "outline"} onClick={() => setOrigen("externo")}>
+              Vehículo externo
+            </Button>
+          </div>
+          {origen === "stock" ? (
+            <Select name="vehiculoId">
+              <SelectTrigger>
+                <SelectValue placeholder="Elegí un vehículo" />
+              </SelectTrigger>
+              <SelectContent>
+                {vehiculos.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input name="vehiculoExterno" placeholder="Ej: Toyota Corolla 2015, matrícula ABC 1234" />
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Nombre del cliente</Label>

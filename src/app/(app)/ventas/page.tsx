@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { localVentaLabel } from "@/lib/venta-labels";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -122,10 +123,8 @@ export default async function VentasPage({
         <TableBody>
           {ventas.map((v) => (
             <TableRow key={v.id}>
-              <TableCell className="font-medium text-foreground">
-                {v.vehiculo.marca} {v.vehiculo.modelo}
-              </TableCell>
-              <TableCell>{v.vehiculo.matricula ?? "—"}</TableCell>
+              <TableCell className="font-medium text-foreground">{vehiculoLabel(v.vehiculo, v.vehiculoExterno)}</TableCell>
+              <TableCell>{v.vehiculo?.matricula ?? "—"}</TableCell>
               <TableCell>{v.fechaSena ? new Date(v.fechaSena).toLocaleDateString("es-UY") : "—"}</TableCell>
               <TableCell>{v.fechaEntrega ? new Date(v.fechaEntrega).toLocaleDateString("es-UY") : "—"}</TableCell>
               <TableCell>{formatCents(v.precioVentaUsdCents, "USD")}</TableCell>

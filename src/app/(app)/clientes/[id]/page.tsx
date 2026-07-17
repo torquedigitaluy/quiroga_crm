@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -58,7 +59,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
           {cliente.ventas.map((v) => (
             <div key={v.id} className="flex justify-between text-sm">
               <span>
-                {v.vehiculo.marca} {v.vehiculo.modelo} ({v.vehiculo.matricula ?? "—"})
+                {vehiculoLabel(v.vehiculo, v.vehiculoExterno)} ({v.vehiculo?.matricula ?? "—"})
               </span>
               <span className="font-medium">{formatCents(v.precioVentaUsdCents, "USD")}</span>
             </div>
@@ -94,9 +95,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
             const saldo = f.costoEscribaniaCents - pagado;
             return (
               <div key={f.id} className="flex justify-between text-sm">
-                <span>
-                  {f.vehiculo.marca} {f.vehiculo.modelo}
-                </span>
+                <span>{vehiculoLabel(f.vehiculo, f.vehiculoExterno)}</span>
                 <span className={saldo > 0 ? "text-danger" : "text-success"}>
                   Saldo: {formatCents(saldo, f.costoMoneda)}
                 </span>

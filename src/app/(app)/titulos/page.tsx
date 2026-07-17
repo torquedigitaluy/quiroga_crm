@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { costoTitulosEfectivoCents } from "@/lib/titulos";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -94,21 +95,19 @@ export default async function TitulosPage({
               const pagadoCents = f.entregas.reduce((sum, e) => sum + e.montoCents, 0);
               const saldo = costoEfectivo - pagadoCents;
               const clienteNombre = f.cliente ? `${f.cliente.nombre} ${f.cliente.apellido ?? ""}`.trim() : "";
-              const mensaje = `Hola ${clienteNombre}, te escribimos de Quiroga Automóviles por el trámite de títulos de tu ${f.vehiculo.marca} ${f.vehiculo.modelo} (${f.vehiculo.matricula ?? "s/matrícula"}). Tenés un saldo pendiente de ${formatCents(saldo, f.costoMoneda)}. ¿Podemos coordinar el pago?`;
+              const mensaje = `Hola ${clienteNombre}, te escribimos de Quiroga Automóviles por el trámite de títulos de tu ${vehiculoLabel(f.vehiculo, f.vehiculoExterno)} (${f.vehiculo?.matricula ?? "s/matrícula"}). Tenés un saldo pendiente de ${formatCents(saldo, f.costoMoneda)}. ¿Podemos coordinar el pago?`;
               return (
                 <TableRow key={f.id}>
                   <TableCell>
                     {verArchivadas ? (
-                      <span className="font-medium text-foreground">
-                        {f.vehiculo.marca} {f.vehiculo.modelo}
-                      </span>
+                      <span className="font-medium text-foreground">{vehiculoLabel(f.vehiculo, f.vehiculoExterno)}</span>
                     ) : (
                       <Link href={`/titulos/${f.id}`} className="font-medium text-foreground hover:text-brand">
-                        {f.vehiculo.marca} {f.vehiculo.modelo}
+                        {vehiculoLabel(f.vehiculo, f.vehiculoExterno)}
                       </Link>
                     )}
                   </TableCell>
-                  <TableCell>{f.vehiculo.matricula ?? "—"}</TableCell>
+                  <TableCell>{f.vehiculo?.matricula ?? "—"}</TableCell>
                   <TableCell>{f.cliente ? `${f.cliente.nombre} ${f.cliente.apellido ?? ""}` : "—"}</TableCell>
                   <TableCell>{f.fechaVenta ? new Date(f.fechaVenta).toLocaleDateString("es-UY") : "—"}</TableCell>
                   <TableCell>

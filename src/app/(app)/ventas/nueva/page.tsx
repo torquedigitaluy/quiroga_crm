@@ -7,8 +7,10 @@ export default async function NuevaVentaPage() {
   await assertCan("ventas.create");
 
   const [vehiculos, usuarios] = await Promise.all([
+    // El estado del vehículo en Stock (incl. "Señado") no debe impedir crear
+    // la venta — solo se excluyen los ya entregados/vendidos.
     db.vehiculo.findMany({
-      where: { esVehiculo: true, estado: { not: "SENADO" }, archivedAt: null },
+      where: { esVehiculo: true, estado: { not: "VENDIDO" }, archivedAt: null },
       orderBy: { marca: "asc" },
     }),
     db.user.findMany({ where: { activo: true, esVendedor: true }, orderBy: { nombre: "asc" } }),

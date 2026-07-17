@@ -38,16 +38,21 @@ export default async function EditarVentaPage({ params }: { params: Promise<{ id
         action={boundUpdate}
         submitLabel="Guardar cambios"
         vendedores={vendedores.map((u) => ({ id: u.id, label: u.nombre }))}
-        vehiculos={[
-          {
-            id: venta.vehiculo.id,
-            label: `${venta.vehiculo.marca} ${venta.vehiculo.modelo}${venta.vehiculo.matricula ? ` — ${venta.vehiculo.matricula}` : ""}`,
-            propietario: venta.vehiculo.propietario,
-          },
-        ]}
+        vehiculos={
+          venta.vehiculo
+            ? [
+                {
+                  id: venta.vehiculo.id,
+                  label: `${venta.vehiculo.marca} ${venta.vehiculo.modelo}${venta.vehiculo.matricula ? ` — ${venta.vehiculo.matricula}` : ""}`,
+                  propietario: venta.vehiculo.propietario,
+                },
+              ]
+            : []
+        }
         initial={{
           id: venta.id,
-          vehiculoId: venta.vehiculoId,
+          vehiculoId: venta.vehiculoId ?? undefined,
+          vehiculoExterno: venta.vehiculoExterno,
           clienteNombre: venta.cliente?.nombre ?? "",
           clienteApellido: venta.cliente?.apellido ?? "",
           clienteCi: venta.cliente?.ci ?? "",

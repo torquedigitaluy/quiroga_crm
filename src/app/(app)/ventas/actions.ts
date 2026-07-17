@@ -7,6 +7,7 @@ import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
 import { logAudit } from "@/lib/audit";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { ventaSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -19,6 +20,7 @@ export async function createVenta(formData: FormData) {
 
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
+    vehiculoExterno: String(formData.get("vehiculoExterno") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
     clienteApellido: String(formData.get("clienteApellido") ?? ""),
     clienteCi: String(formData.get("clienteCi") ?? ""),
@@ -47,12 +49,14 @@ export async function createVenta(formData: FormData) {
     contacto: data.clienteContacto,
   });
 
-  // El propietario del vehículo se toma automáticamente del stock, no del form.
-  const vehiculo = await db.vehiculo.findUnique({ where: { id: data.vehiculoId } });
+  // El propietario del vehículo se toma automáticamente del stock; para un
+  // vehículo externo se usa lo que se haya escrito a mano en el formulario.
+  const vehiculo = data.vehiculoId ? await db.vehiculo.findUnique({ where: { id: data.vehiculoId } }) : null;
 
   await db.venta.create({
     data: {
-      vehiculoId: data.vehiculoId,
+      vehiculoId: data.vehiculoId || null,
+      vehiculoExterno: data.vehiculoId ? null : data.vehiculoExterno || null,
       clienteId: cliente.id,
       fechaSena: dateOrNull(formData.get("fechaSena")),
       senaUsdCents: data.senaUsdCents,
@@ -60,18 +64,20 @@ export async function createVenta(formData: FormData) {
       precioVentaUsdCents: data.precioVentaUsdCents,
       vendedorId: data.vendedorId || null,
       localVenta: data.localVenta,
-      propietarioVehiculo: vehiculo?.propietario ?? null,
+      propietarioVehiculo: vehiculo?.propietario ?? data.propietarioVehiculo ?? null,
       comisionVentaUsdCents: data.comisionVentaUsdCents,
       comisionTituloUsdCents: data.comisionTituloUsdCents,
     },
   });
 
-  await db.vehiculo.update({ where: { id: data.vehiculoId }, data: { estado: "VENDIDO" } });
+  if (data.vehiculoId) {
+    await db.vehiculo.update({ where: { id: data.vehiculoId }, data: { estado: "VENDIDO" } });
+  }
   await logAudit({
     accion: "CREAR",
     entidad: "Venta",
-    entidadId: data.vehiculoId,
-    descripcion: `Registró la venta de ${vehiculo?.marca ?? ""} ${vehiculo?.modelo ?? ""}`.trim(),
+    entidadId: data.vehiculoId || undefined,
+    descripcion: `Registró la venta de ${vehiculo ? `${vehiculo.marca} ${vehiculo.modelo}` : data.vehiculoExterno || "vehículo externo"}`,
   });
 
   revalidatePath("/ventas");
@@ -118,7 +124,8 @@ export async function updateVenta(id: string, formData: FormData) {
   });
 
   // El propietario se mantiene sincronizado con el vehículo (viene del stock).
-  const vehiculo = await db.vehiculo.findUnique({ where: { id: data.vehiculoId } });
+  // El vehículo en sí no se reasigna desde este formulario de edición.
+  const vehiculo = venta.vehiculoId ? await db.vehiculo.findUnique({ where: { id: venta.vehiculoId } }) : null;
 
   await db.venta.update({
     where: { id },
@@ -130,7 +137,7 @@ export async function updateVenta(id: string, formData: FormData) {
       precioVentaUsdCents: data.precioVentaUsdCents,
       vendedorId: data.vendedorId || null,
       localVenta: data.localVenta,
-      propietarioVehiculo: vehiculo?.propietario ?? null,
+      propietarioVehiculo: vehiculo?.propietario ?? data.propietarioVehiculo ?? null,
       comisionVentaUsdCents: data.comisionVentaUsdCents,
       comisionTituloUsdCents: data.comisionTituloUsdCents,
     },
@@ -140,7 +147,7 @@ export async function updateVenta(id: string, formData: FormData) {
     accion: "EDITAR",
     entidad: "Venta",
     entidadId: id,
-    descripcion: `Editó la venta de ${vehiculo?.marca ?? ""} ${vehiculo?.modelo ?? ""}`.trim(),
+    descripcion: `Editó la venta de ${vehiculo ? `${vehiculo.marca} ${vehiculo.modelo}` : venta.vehiculoExterno || "vehículo externo"}`,
   });
 
   revalidatePath("/ventas");
@@ -209,7 +216,7 @@ export async function archiveVenta(id: string) {
     accion: "ELIMINAR",
     entidad: "Venta",
     entidadId: id,
-    descripcion: `Archivó la venta de ${venta.vehiculo.marca} ${venta.vehiculo.modelo}`,
+    descripcion: `Archivó la venta de ${vehiculoLabel(venta.vehiculo, venta.vehiculoExterno)}`,
   });
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");
@@ -222,7 +229,7 @@ export async function restoreVenta(id: string) {
     accion: "EDITAR",
     entidad: "Venta",
     entidadId: id,
-    descripcion: `Restauró la venta de ${venta.vehiculo.marca} ${venta.vehiculo.modelo}`,
+    descripcion: `Restauró la venta de ${vehiculoLabel(venta.vehiculo, venta.vehiculoExterno)}`,
   });
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");

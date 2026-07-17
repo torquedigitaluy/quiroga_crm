@@ -36,15 +36,20 @@ export default async function EditarTramitePage({ params }: { params: Promise<{ 
       <TramiteForm
         action={boundUpdate}
         submitLabel="Guardar cambios"
-        vehiculos={[
-          {
-            id: tramite.vehiculo.id,
-            label: `${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}${tramite.vehiculo.matricula ? ` — ${tramite.vehiculo.matricula}` : ""}`,
-          },
-        ]}
+        vehiculos={
+          tramite.vehiculo
+            ? [
+                {
+                  id: tramite.vehiculo.id,
+                  label: `${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}${tramite.vehiculo.matricula ? ` — ${tramite.vehiculo.matricula}` : ""}`,
+                },
+              ]
+            : []
+        }
         initial={{
           id: tramite.id,
-          vehiculoId: tramite.vehiculoId,
+          vehiculoId: tramite.vehiculoId ?? undefined,
+          vehiculoExterno: tramite.vehiculoExterno,
           clienteNombre: tramite.cliente?.nombre ?? "",
           clienteApellido: tramite.cliente?.apellido ?? "",
           clienteCi: tramite.cliente?.ci ?? "",

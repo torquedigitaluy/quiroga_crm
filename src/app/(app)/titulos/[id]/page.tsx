@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { assertCan, getCurrentUser, getEffectivePermissions } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { costoTitulosEfectivoCents, recargoCartaDePagoCents } from "@/lib/titulos";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntregasEditor } from "@/components/titulos/EntregasEditor";
 import { addEntrega, deleteEntrega } from "../actions";
@@ -47,8 +48,8 @@ export default async function FinanciacionTituloDetailPage({ params }: { params:
           Volver
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-foreground">
-          {financiacion.vehiculo.marca} {financiacion.vehiculo.modelo}{" "}
-          {financiacion.vehiculo.matricula ? `(${financiacion.vehiculo.matricula})` : ""}
+          {vehiculoLabel(financiacion.vehiculo, financiacion.vehiculoExterno)}{" "}
+          {financiacion.vehiculo?.matricula ? `(${financiacion.vehiculo.matricula})` : ""}
         </h1>
         <p className="text-sm text-muted-foreground">
           Cliente: {financiacion.cliente ? `${financiacion.cliente.nombre} ${financiacion.cliente.apellido ?? ""}` : "—"}

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { PromesaForm, type VentaOption, type VehiculoStockOption } from "@/components/documentos/PromesaForm";
 import { updatePromesa, archivePromesa } from "../actions";
 
@@ -51,14 +52,14 @@ export default async function EditarPromesaPage({ params }: { params: Promise<{ 
 
   const ventaOptions: VentaOption[] = ventas.map((v) => ({
     id: v.id,
-    label: `${v.vehiculo.marca} ${v.vehiculo.modelo} — ${v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido ?? ""}` : "sin cliente"}`,
-    vehMarca: v.vehiculo.marca,
-    vehModelo: v.vehiculo.modelo,
-    vehAnio: v.vehiculo.anio,
-    vehColor: v.vehiculo.color,
-    vehMatricula: v.vehiculo.matricula,
-    vehMotor: v.vehiculo.motor,
-    vehChasis: v.vehiculo.chasis,
+    label: `${vehiculoLabel(v.vehiculo, v.vehiculoExterno)} — ${v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido ?? ""}` : "sin cliente"}`,
+    vehMarca: v.vehiculo ? v.vehiculo.marca : v.vehiculoExterno ?? "",
+    vehModelo: v.vehiculo ? v.vehiculo.modelo : "",
+    vehAnio: v.vehiculo?.anio ?? null,
+    vehColor: v.vehiculo?.color ?? null,
+    vehMatricula: v.vehiculo?.matricula ?? null,
+    vehMotor: v.vehiculo?.motor ?? null,
+    vehChasis: v.vehiculo?.chasis ?? null,
     clienteId: v.clienteId,
     clienteNombre: v.cliente?.nombre ?? "",
     clienteApellido: v.cliente?.apellido ?? "",

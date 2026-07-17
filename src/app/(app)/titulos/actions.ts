@@ -7,6 +7,7 @@ import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
 import { logAudit } from "@/lib/audit";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { financiacionTituloSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -19,6 +20,7 @@ export async function createFinanciacionTitulo(formData: FormData) {
 
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
+    vehiculoExterno: String(formData.get("vehiculoExterno") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
     clienteApellido: String(formData.get("clienteApellido") ?? ""),
     clienteCi: String(formData.get("clienteCi") ?? ""),
@@ -44,7 +46,8 @@ export async function createFinanciacionTitulo(formData: FormData) {
 
   const financiacion = await db.financiacionTitulo.create({
     data: {
-      vehiculoId: data.vehiculoId,
+      vehiculoId: data.vehiculoId || null,
+      vehiculoExterno: data.vehiculoId ? null : data.vehiculoExterno || null,
       clienteId: cliente.id,
       contacto: data.contacto || null,
       fechaVenta: dateOrNull(formData.get("fechaVenta")),
@@ -105,7 +108,7 @@ export async function archiveFinanciacionTitulo(id: string) {
     accion: "ELIMINAR",
     entidad: "Financiación de títulos",
     entidadId: id,
-    descripcion: `Archivó la financiación de títulos de ${fin.vehiculo.marca} ${fin.vehiculo.modelo}`,
+    descripcion: `Archivó la financiación de títulos de ${vehiculoLabel(fin.vehiculo, fin.vehiculoExterno)}`,
   });
   revalidatePath("/titulos");
 }
@@ -121,7 +124,7 @@ export async function restoreFinanciacionTitulo(id: string) {
     accion: "EDITAR",
     entidad: "Financiación de títulos",
     entidadId: id,
-    descripcion: `Restauró la financiación de títulos de ${fin.vehiculo.marca} ${fin.vehiculo.modelo}`,
+    descripcion: `Restauró la financiación de títulos de ${vehiculoLabel(fin.vehiculo, fin.vehiculoExterno)}`,
   });
   revalidatePath("/titulos");
 }

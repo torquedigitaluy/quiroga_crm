@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
@@ -130,10 +131,8 @@ export default async function PlanillaVentaPage() {
                 const entregado = v.fechaEntrega && new Date(v.fechaEntrega) <= now;
                 return (
                   <TableRow key={v.id}>
-                    <TableCell className="font-medium text-foreground">
-                      {v.vehiculo.marca} {v.vehiculo.modelo}
-                    </TableCell>
-                    <TableCell>{v.vehiculo.matricula ?? "—"}</TableCell>
+                    <TableCell className="font-medium text-foreground">{vehiculoLabel(v.vehiculo, v.vehiculoExterno)}</TableCell>
+                    <TableCell>{v.vehiculo?.matricula ?? "—"}</TableCell>
                     <TableCell>{v.fechaSena ? new Date(v.fechaSena).toLocaleDateString("es-UY") : "—"}</TableCell>
                     <TableCell>{v.fechaEntrega ? new Date(v.fechaEntrega).toLocaleDateString("es-UY") : "—"}</TableCell>
                     <TableCell>{formatCents(v.precioVentaUsdCents, "USD")}</TableCell>

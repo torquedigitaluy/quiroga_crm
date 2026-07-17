@@ -33,9 +33,7 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   inline: { fontWeight: 700, textDecoration: "underline" },
 
-  montevideoLine: { fontSize: 8.2, textAlign: "center", marginTop: 4, marginBottom: 8 },
-
-  deudorCols: { flexDirection: "row", gap: 22, marginTop: 2 },
+  deudorCols: { flexDirection: "row", gap: 22, marginTop: 8 },
   col: { flex: 1 },
   fieldRow: { flexDirection: "row", alignItems: "flex-end", gap: 3, marginTop: 7 },
   fieldLabel: { fontSize: 8.2 },
@@ -106,9 +104,6 @@ function ColumnaDeudor({ data }: { data?: ConformePdfData }) {
       <Text style={styles.caption}>(Departamento y dirección)</Text>
       <FieldRow label="DEUDOR" value={data?.deudorNombre ?? ""} />
       <Text style={styles.caption}>(Nombre y apellidos)</Text>
-      {/* Las firmas van en blanco: se firman a mano sobre el impreso. */}
-      <FieldRow label="FIRMA (S)" value="" />
-      <FieldRow label="Contrafirma" value="" />
       <FieldRow label="CI" value={data?.deudorCedula ?? ""} />
       <FieldRow label="TEL" value={data?.deudorTelefono ?? ""} />
     </View>
@@ -198,8 +193,6 @@ export function ConformePDF({ data }: { data: ConformePdfData }) {
           Para todos los efectos judiciales o extrajudiciales a que pudiera dar lugar este documento, el (los) deudor
           (es) constituye (n) como domicilio especial el (los) abajo denunciado (s).
         </Text>
-
-        <Text style={styles.montevideoLine}>Montevideo, ............................. de 20 ...........</Text>
 
         <View style={styles.deudorCols}>
           {/* Deudor principal (con datos) y co-deudor (en blanco), como en el papel. */}

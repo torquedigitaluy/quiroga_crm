@@ -200,6 +200,7 @@ model User {
   ordenesComoRevisor   OrdenTaller[]        @relation("RevisorOrden")
   ordenesCreadas       OrdenTaller[]        @relation("CreadorOrden")
   promesasCreadas      PromesaCompraventa[] @relation("CreadorPromesa")
+  valesCreados         Vale[]               @relation("CreadorVale")
 }
 
 model PasswordResetToken {
@@ -354,6 +355,7 @@ model Cliente {
   financiacionesPropia FinanciacionPropia[]
   deudas               DeudaCliente[]
   promesas             PromesaCompraventa[]
+  vales                Vale[]
 
   @@index([nombre])
   @@index([ci])
@@ -394,8 +396,9 @@ model GastoLine {
 
 model Venta {
   id                     String     @id @default(cuid())
-  vehiculoId             String
-  vehiculo               Vehiculo   @relation(fields: [vehiculoId], references: [id])
+  vehiculoId             String?
+  vehiculo               Vehiculo?  @relation(fields: [vehiculoId], references: [id])
+  vehiculoExterno        String?
   clienteId              String?
   cliente                Cliente?   @relation(fields: [clienteId], references: [id])
   fechaSena              DateTime?
@@ -459,8 +462,9 @@ model CreditoBBVA {
 
 model EscribaniaTramite {
   id                  String           @id @default(cuid())
-  vehiculoId          String
-  vehiculo            Vehiculo         @relation(fields: [vehiculoId], references: [id])
+  vehiculoId          String?
+  vehiculo            Vehiculo?        @relation(fields: [vehiculoId], references: [id])
+  vehiculoExterno     String?
   clienteId           String?
   cliente             Cliente?         @relation(fields: [clienteId], references: [id])
   fecha               DateTime?
@@ -486,8 +490,9 @@ model EscribaniaTramite {
 
 model FinanciacionTitulo {
   id                   String    @id @default(cuid())
-  vehiculoId           String
-  vehiculo             Vehiculo  @relation(fields: [vehiculoId], references: [id])
+  vehiculoId           String?
+  vehiculo             Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  vehiculoExterno      String?
   clienteId            String?
   cliente              Cliente?  @relation(fields: [clienteId], references: [id])
   contacto             String?
@@ -571,6 +576,7 @@ model FinanciacionPropia {
 
   cuotas    CuotaPropia[]
   conformes Conforme[]
+  vales     Vale[]
 }
 
 model CuotaPropia {
@@ -800,6 +806,47 @@ model PromesaCompraventa {
 
   @@index([clienteId])
   @@index([vehiculoId])
+}
+
+// ---------- Vale de financiación (documento único por plan, firmado en papel) ----------
+
+model Vale {
+  id     String @id @default(cuid())
+  numero Int    @unique @default(autoincrement())
+
+  financiacionPropiaId String?
+  financiacionPropia   FinanciacionPropia? @relation(fields: [financiacionPropiaId], references: [id])
+  clienteId            String?
+  cliente              Cliente?            @relation(fields: [clienteId], references: [id])
+
+  fecha DateTime @default(now())
+
+  // Condiciones del plan
+  condiciones             String?
+  montoFinanciadoUsdCents Int?
+  cantidadCuotas          Int?
+  montoCuotaUsdCents      Int?
+  diaVencimientoMensual   Int?
+  fechaPrimeraCuota       DateTime?
+  observaciones           String?
+
+  // Responsables del pago — exactamente dos firmantes, cada uno con espacio
+  // en blanco para firmar a mano sobre el impreso (sin firma digital).
+  firmante1Nombre    String?
+  firmante1Ci        String?
+  firmante1Domicilio String?
+  firmante2Nombre    String?
+  firmante2Ci        String?
+  firmante2Domicilio String?
+
+  creadoPorId String?
+  creadoPor   User?     @relation("CreadorVale", fields: [creadoPorId], references: [id])
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([clienteId])
+  @@index([financiacionPropiaId])
 }
 
 model OrdenTaller {

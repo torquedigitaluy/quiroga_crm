@@ -18,6 +18,7 @@ import {
 export type TramiteInitial = {
   id?: string;
   vehiculoId?: string;
+  vehiculoExterno?: string | null;
   clienteNombre?: string;
   clienteApellido?: string;
   clienteCi?: string;
@@ -51,7 +52,11 @@ export function TramiteForm({
   const isEdit = Boolean(initial?.id);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [origen, setOrigen] = useState<"stock" | "externo">(
+    !initial?.vehiculoId && initial?.vehiculoExterno ? "externo" : "stock",
+  );
   const [vehiculoId, setVehiculoId] = useState<string>(initial?.vehiculoId ?? "");
+  const [vehiculoExterno, setVehiculoExterno] = useState<string>(initial?.vehiculoExterno ?? "");
   const router = useRouter();
 
   const handleSubmit = (formData: FormData) => {
@@ -74,22 +79,46 @@ export function TramiteForm({
           <Label>Vehículo</Label>
           {isEdit ? (
             <>
-              <Input value={vehiculos.find((v) => v.id === vehiculoId)?.label ?? ""} disabled readOnly />
+              <Input
+                value={origen === "stock" ? (vehiculos.find((v) => v.id === vehiculoId)?.label ?? "") : vehiculoExterno}
+                disabled
+                readOnly
+              />
               <input type="hidden" name="vehiculoId" value={vehiculoId} />
+              <input type="hidden" name="vehiculoExterno" value={vehiculoExterno} />
             </>
           ) : (
-            <Select name="vehiculoId" required value={vehiculoId || undefined} onValueChange={setVehiculoId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Elegí un vehículo" />
-              </SelectTrigger>
-              <SelectContent>
-                {vehiculos.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <>
+              <div className="flex gap-2">
+                <Button type="button" variant={origen === "stock" ? "default" : "outline"} onClick={() => setOrigen("stock")}>
+                  De stock
+                </Button>
+                <Button type="button" variant={origen === "externo" ? "default" : "outline"} onClick={() => setOrigen("externo")}>
+                  Vehículo externo
+                </Button>
+              </div>
+              {origen === "stock" ? (
+                <Select name="vehiculoId" value={vehiculoId || undefined} onValueChange={setVehiculoId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Elegí un vehículo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehiculos.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  name="vehiculoExterno"
+                  placeholder="Ej: Toyota Corolla 2015, matrícula ABC 1234"
+                  value={vehiculoExterno}
+                  onChange={(e) => setVehiculoExterno(e.target.value)}
+                />
+              )}
+            </>
           )}
         </div>
 

@@ -7,6 +7,7 @@ import { assertCan } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { findOrCreateCliente } from "@/lib/cliente";
 import { logAudit } from "@/lib/audit";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { escribaniaSchema } from "./schema";
 
 function dateOrNull(value: FormDataEntryValue | null): Date | null {
@@ -17,6 +18,7 @@ function dateOrNull(value: FormDataEntryValue | null): Date | null {
 function parseTramite(formData: FormData) {
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
+    vehiculoExterno: String(formData.get("vehiculoExterno") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
     clienteApellido: String(formData.get("clienteApellido") ?? ""),
     clienteCi: String(formData.get("clienteCi") ?? ""),
@@ -70,7 +72,8 @@ export async function createTramite(formData: FormData) {
 
   await db.escribaniaTramite.create({
     data: {
-      vehiculoId: data.vehiculoId,
+      vehiculoId: data.vehiculoId || null,
+      vehiculoExterno: data.vehiculoId ? null : data.vehiculoExterno || null,
       clienteId: cliente.id,
       ...tramiteData(data, formData),
     },
@@ -115,7 +118,7 @@ export async function deleteTramite(id: string) {
     accion: "ELIMINAR",
     entidad: "Trámite de escribanía",
     entidadId: id,
-    descripcion: `Archivó el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`,
+    descripcion: `Archivó el trámite de ${vehiculoLabel(tramite.vehiculo, tramite.vehiculoExterno)}`,
   });
   revalidatePath("/escribania");
 }
@@ -131,7 +134,7 @@ export async function restoreTramite(id: string) {
     accion: "EDITAR",
     entidad: "Trámite de escribanía",
     entidadId: id,
-    descripcion: `Restauró el trámite de ${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}`,
+    descripcion: `Restauró el trámite de ${vehiculoLabel(tramite.vehiculo, tramite.vehiculoExterno)}`,
   });
   revalidatePath("/escribania");
 }

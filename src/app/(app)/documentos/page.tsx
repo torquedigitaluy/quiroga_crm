@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { FileDown, Plus } from "lucide-react";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, can } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { RestoreButton } from "@/components/ui/RestoreButton";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
 import { restorePromesa, deletePromesa } from "./promesa/actions";
+import { archiveVale } from "./vale/actions";
 
 export default async function DocumentosPage() {
   await assertCan("docs.generate");
+  const puedeVale = await can("docs.generate_vale");
 
-  const [promesas, promesasArchivadas, conformes] = await Promise.all([
+  const [promesas, promesasArchivadas, conformes, vales] = await Promise.all([
     db.promesaCompraventa.findMany({
       where: { archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -27,6 +30,9 @@ export default async function DocumentosPage() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    puedeVale
+      ? db.vale.findMany({ where: { archivedAt: null }, include: { cliente: true }, orderBy: { createdAt: "desc" }, take: 30 })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -171,6 +177,62 @@ export default async function DocumentosPage() {
           </TableBody>
         </Table>
       </section>
+
+      {puedeVale && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Vales</h2>
+            <Button asChild>
+              <Link href="/documentos/vale/nueva">
+                <Plus className="h-4 w-4" />
+                Nuevo vale
+              </Link>
+            </Button>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>N°</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead className="w-48" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {vales.map((v) => (
+                <TableRow key={v.id}>
+                  <TableCell>{v.numero}</TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    <Link href={`/documentos/vale/${v.id}`} className="hover:text-brand">
+                      {v.cliente?.nombre ?? "—"}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{new Date(v.fecha).toLocaleDateString("es-UY")}</TableCell>
+                  <TableCell className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/documentos/vale/${v.id}`}>Editar</Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`/api/documentos/vale/${v.id}`} target="_blank" rel="noopener noreferrer">
+                        <FileDown className="h-3.5 w-3.5" />
+                        PDF
+                      </a>
+                    </Button>
+                    <ConfirmArchiveButton onConfirm={archiveVale.bind(null, v.id)} />
+                  </TableCell>
+                </TableRow>
+              ))}
+              {vales.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+                    No hay vales generados todavía.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </section>
+      )}
     </div>
   );
 }

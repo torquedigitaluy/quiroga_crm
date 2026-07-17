@@ -10,6 +10,7 @@ import { Can } from "@/components/auth/Can";
 import { SeccionTabs } from "@/components/escribania/SeccionTabs";
 import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
 import { RestoreButton } from "@/components/ui/RestoreButton";
+import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { deleteTramite, restoreTramite } from "./actions";
 import {
   TITULOS_CON_LABELS,
@@ -92,9 +93,9 @@ export default async function EscribaniaPage({
               <TableRow key={t.id}>
                 <TableCell>{t.fecha ? new Date(t.fecha).toLocaleDateString("es-UY") : "—"}</TableCell>
                 <TableCell className="font-medium text-foreground">
-                  {t.vehiculo.marca} {t.vehiculo.modelo}
+                  {vehiculoLabel(t.vehiculo, t.vehiculoExterno)}
                 </TableCell>
-                <TableCell>{t.vehiculo.matricula ?? "—"}</TableCell>
+                <TableCell>{t.vehiculo?.matricula ?? "—"}</TableCell>
                 <TableCell>{TITULOS_CON_LABELS[t.titulosCon]}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{TIPO_DOC_LABELS[t.tipoDoc]}</Badge>
