@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -43,6 +44,7 @@ export function RepuestosTable({
         const form = document.getElementById("repuesto-add-form") as HTMLFormElement | null;
         form?.reset();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al agregar el repuesto");
       }
     });

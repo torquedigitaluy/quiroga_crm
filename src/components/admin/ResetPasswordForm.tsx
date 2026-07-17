@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export function ResetPasswordForm({ action }: { action: (formData: FormData) => 
         const form = document.getElementById("reset-password-form") as HTMLFormElement | null;
         form?.reset();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al cambiar la contraseña");
       }
     });

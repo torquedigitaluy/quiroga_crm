@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ export function GastoContadoraForm({ action }: { action: (formData: FormData) =>
         const form = document.getElementById("gasto-contadora-form") as HTMLFormElement | null;
         form?.reset();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al guardar");
       }
     });

@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,7 @@ export function TransferenciaDialog({
         router.refresh();
         setOpen(false);
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al crear la transferencia");
       }
     });

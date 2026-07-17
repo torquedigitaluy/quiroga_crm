@@ -16,7 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="h-full antialiased" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col">
+      {/* suppressHydrationWarning: algunas extensiones del navegador (p.ej.
+          ColorZilla) inyectan atributos en el body antes de que cargue React y
+          eso dispara un falso error de hidratación. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           {children}
           <Toaster position="top-right" richColors />

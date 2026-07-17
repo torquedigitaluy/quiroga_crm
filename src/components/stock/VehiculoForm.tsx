@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -86,6 +87,7 @@ export function VehiculoForm({
         await action(formData);
         router.refresh();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al guardar");
       }
     });

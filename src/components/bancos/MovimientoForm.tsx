@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ export function MovimientoForm({ cuentaId, action }: { cuentaId: string; action:
         const form = document.getElementById(`movimiento-form-${cuentaId}`) as HTMLFormElement | null;
         form?.reset();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al guardar");
       }
     });

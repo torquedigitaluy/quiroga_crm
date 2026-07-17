@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -33,6 +34,7 @@ export function ChecklistEditor({
         await onToggle(itemId, hecho);
         router.refresh();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al actualizar");
       }
     });
@@ -47,6 +49,7 @@ export function ChecklistEditor({
         const form = document.getElementById("checklist-add-form") as HTMLFormElement | null;
         form?.reset();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al agregar la tarea");
       }
     });

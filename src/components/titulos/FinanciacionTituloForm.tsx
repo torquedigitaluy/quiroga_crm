@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function FinanciacionTituloForm({
       try {
         await action(formData);
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al guardar");
       }
     });

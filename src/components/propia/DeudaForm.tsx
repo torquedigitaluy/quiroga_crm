@@ -1,4 +1,5 @@
 "use client";
+import { rethrowIfNextControlFlow } from "@/lib/nextControlFlow";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ export function DeudaForm({ action }: { action: (formData: FormData) => Promise<
         const form = document.getElementById("deuda-add-form") as HTMLFormElement | null;
         form?.reset();
       } catch (e) {
+        rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al agregar la deuda");
       }
     });
