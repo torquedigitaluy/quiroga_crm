@@ -94,7 +94,7 @@ function Field({
   return (
     <div className="flex flex-col gap-1.5">
       <Label>{label}</Label>
-      <Input name={field} type={type} value={values[field]} onChange={(e) => onChange(field, e.target.value)} />
+      <Input name={field} type={type} value={values[field] ?? ""} onChange={(e) => onChange(field, e.target.value)} />
     </div>
   );
 }
@@ -200,7 +200,7 @@ export function ValeForm({
           <Label>Total en letras</Label>
           <Input
             name="totalEnLetras"
-            value={values.totalEnLetras}
+            value={values.totalEnLetras ?? ""}
             onChange={(e) => update("totalEnLetras", e.target.value)}
             placeholder="Se completa solo desde el total"
           />
@@ -211,7 +211,7 @@ export function ValeForm({
           <Label>Cuota en letras</Label>
           <Input
             name="montoCuotaEnLetras"
-            value={values.montoCuotaEnLetras}
+            value={values.montoCuotaEnLetras ?? ""}
             onChange={(e) => update("montoCuotaEnLetras", e.target.value)}
             placeholder="Se completa solo desde la cuota"
           />
@@ -225,7 +225,7 @@ export function ValeForm({
         <legend className="px-1 text-sm font-semibold text-foreground">Acreedores</legend>
         <div className="flex flex-col gap-1.5">
           <Label>A la orden de</Label>
-          <Textarea name="acreedores" rows={2} value={values.acreedores} onChange={(e) => update("acreedores", e.target.value)} />
+          <Textarea name="acreedores" rows={2} value={values.acreedores ?? ""} onChange={(e) => update("acreedores", e.target.value)} />
         </div>
       </fieldset>
 
