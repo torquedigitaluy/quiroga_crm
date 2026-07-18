@@ -30,15 +30,18 @@ const styles = StyleSheet.create({
 
   firmante: { marginBottom: 16 },
   firmaFila: { flexDirection: "row", alignItems: "flex-end", marginTop: 10 },
-  campoLabel: { fontSize: 9, marginRight: 4 },
-  campoLinea: { flex: 1, borderBottom: "1 solid #111", minHeight: 12 },
-  firmaLabel: { width: 150, fontSize: 9, textAlign: "center" },
-  firmaLinea: { width: 150, borderBottom: "1 solid #111", minHeight: 12, marginLeft: 20 },
+  // Etiqueta y línea de datos con ancho fijo, para que Nombre / C.I / Domicilio
+  // queden parejas y no se estiren hasta la columna de firma.
+  campoLabel: { width: 72, fontSize: 9 },
+  campoLinea: { width: 280, borderBottom: "1 solid #111", minHeight: 12 },
+  firmaLabel: { width: 140, fontSize: 9, textAlign: "center", marginLeft: 20 },
+  firmaLinea: { width: 140, borderBottom: "1 solid #111", minHeight: 12, marginLeft: 20 },
 });
 
 export type ValePdfData = {
   numero: number;
   fecha: Date;
+  moneda: string;
   totalPesosCents: number | null;
   totalEnLetras: string | null;
   capitalPrestadoPesosCents: number | null;
@@ -73,10 +76,11 @@ const MESES = [
   "diciembre",
 ];
 
-function pesos(cents: number | null): string {
-  if (cents == null) return "________";
+function monto(cents: number | null, moneda: string): string {
+  const simbolo = moneda === "USD" ? "U$S" : "$";
+  if (cents == null) return `${simbolo} ________`;
   const n = cents / 100;
-  return `$ ${n.toLocaleString("es-UY", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}.-`;
+  return `${simbolo} ${n.toLocaleString("es-UY", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}.-`;
 }
 
 function fechaLarga(d: Date): string {
@@ -137,6 +141,8 @@ export function ValePDF({ data }: { data: ValePdfData }) {
       : "________";
   const acreedores = data.acreedores?.trim() || ACREEDORES_DEFAULT;
   const dia = data.diaVencimientoMensual ?? 10;
+  const m = data.moneda; // "UYU" | "USD"
+  const monedaPalabra = m === "USD" ? "dólares americanos" : "pesos uruguayos";
 
   return (
     <Document>
@@ -145,20 +151,20 @@ export function ValePDF({ data }: { data: ValePdfData }) {
           <Image style={styles.logo} src={getLogoBuffer()} />
           <View style={styles.totalBox}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>{pesos(data.totalPesosCents)}</Text>
+            <Text style={styles.totalValue}>{monto(data.totalPesosCents, m)}</Text>
             <Text style={styles.meta}>Vale N° {data.numero}</Text>
           </View>
         </View>
 
         <Text style={styles.parrafo}>
           <Text style={styles.bold}>VALE</Text> por la suma de{" "}
-          <Text style={styles.bold}>{pesos(data.totalPesosCents)}</Text> (pesos uruguayos {totalLetras}) por concepto de
-          capital prestado (<Text style={styles.bold}>{pesos(data.capitalPrestadoPesosCents)}</Text>), conjuntamente con
-          los intereses compensatorios, que debo (debemos) y pagaré (pagaremos) en forma incondicional, solidaria,
-          indivisible y libre de protesto a <Text style={styles.bold}>{acreedores}</Text> o a su orden, en {cuotasLetras}{" "}
-          ({cuotasNum || "__"}) cuotas mensuales, iguales y consecutivas de{" "}
-          <Text style={styles.bold}>{pesos(data.montoCuotaPesosCents)}</Text> (pesos uruguayos {cuotaLetras}) cada una,
-          venciendo la primera el <Text style={styles.bold}>{dia}</Text> de cada mes, y las restantes los mismos días de
+          <Text style={styles.bold}>{monto(data.totalPesosCents, m)}</Text> ({monedaPalabra} {totalLetras}) por concepto
+          de capital prestado (<Text style={styles.bold}>{monto(data.capitalPrestadoPesosCents, m)}</Text>),
+          conjuntamente con los intereses compensatorios, que debo (debemos) y pagaré (pagaremos) en forma incondicional,
+          solidaria, indivisible y libre de protesto a <Text style={styles.bold}>{acreedores}</Text> o a su orden, en{" "}
+          {cuotasLetras} ({cuotasNum || "__"}) cuotas mensuales, iguales y consecutivas de{" "}
+          <Text style={styles.bold}>{monto(data.montoCuotaPesosCents, m)}</Text> ({monedaPalabra} {cuotaLetras}) cada
+          una, venciendo la primera el <Text style={styles.bold}>{dia}</Text> de cada mes, y las restantes los mismos días de
           los meses siguientes. Las cuotas se abonarán en la cuenta bancaria del Banco BBVA: Cuenta Corriente en moneda
           nacional N° 27192059 3697 Motors Zonamerica SAS, siendo los comprobantes de depósitos y/o transferencias
           bancarias como los únicos medios hábiles para acreditar los pagos.

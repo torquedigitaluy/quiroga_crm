@@ -23,6 +23,7 @@ export type ValeFormValues = {
   fecha: string;
   clienteNombre: string;
   clienteContacto: string;
+  moneda: string;
   totalPesosCents: string;
   totalEnLetras: string;
   capitalPrestadoPesosCents: string;
@@ -49,6 +50,7 @@ const EMPTY: ValeFormValues = {
   fecha: new Date().toISOString().slice(0, 10),
   clienteNombre: "",
   clienteContacto: "",
+  moneda: "UYU",
   totalPesosCents: "",
   totalEnLetras: "",
   capitalPrestadoPesosCents: "",
@@ -108,6 +110,7 @@ export function ValeForm({
   submitLabel: string;
 }) {
   const [values, setValues] = useState<ValeFormValues>({ ...EMPTY, ...initial });
+  const [moneda, setMoneda] = useState(initial?.moneda ?? "UYU");
   const [planId, setPlanId] = useState(initialFinanciacionPropiaId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -174,8 +177,21 @@ export function ValeForm({
       )}
 
       <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-2">
-        <legend className="px-1 text-sm font-semibold text-foreground">Importes (pesos uruguayos)</legend>
-        <Field label="Total ($)" field="totalPesosCents" values={values} onChange={update} type="number" />
+        <legend className="px-1 text-sm font-semibold text-foreground">Importes</legend>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label>Moneda</Label>
+          <input type="hidden" name="moneda" value={moneda} />
+          <Select value={moneda} onValueChange={setMoneda}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="UYU">$ (pesos)</SelectItem>
+              <SelectItem value="USD">USD (dólares)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Field label="Total" field="totalPesosCents" values={values} onChange={update} type="number" />
         <div className="flex flex-col gap-1.5">
           <Label>Total en letras</Label>
           <Input
@@ -185,8 +201,8 @@ export function ValeForm({
             placeholder="Se completa solo desde el total"
           />
         </div>
-        <Field label="Capital prestado ($)" field="capitalPrestadoPesosCents" values={values} onChange={update} type="number" />
-        <Field label="Monto de cada cuota ($)" field="montoCuotaPesosCents" values={values} onChange={update} type="number" />
+        <Field label="Capital prestado" field="capitalPrestadoPesosCents" values={values} onChange={update} type="number" />
+        <Field label="Monto de cada cuota" field="montoCuotaPesosCents" values={values} onChange={update} type="number" />
         <div className="flex flex-col gap-1.5">
           <Label>Cuota en letras</Label>
           <Input

@@ -841,7 +841,8 @@ model Vale {
   fechaPrimeraCuota       DateTime?
   observaciones           String?
 
-  // Vale legal (montos en pesos uruguayos). El monto en letras queda editable.
+  // Vale legal. Los montos van en la moneda elegida; el monto en letras queda editable.
+  moneda                    Moneda  @default(UYU)
   totalPesosCents           Int?
   totalEnLetras             String?
   capitalPrestadoPesosCents Int?

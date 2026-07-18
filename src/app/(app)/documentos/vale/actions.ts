@@ -41,7 +41,8 @@ async function buildData(formData: FormData) {
     financiacionPropiaId,
     clienteId,
     fecha: str(formData, "fecha") ? new Date(String(formData.get("fecha"))) : new Date(),
-    // Importes del vale (pesos uruguayos)
+    // Importes del vale (en la moneda elegida)
+    moneda: (String(formData.get("moneda") ?? "UYU") === "USD" ? "USD" : "UYU") as "UYU" | "USD",
     totalPesosCents: centsOrNull(formData, "totalPesosCents"),
     totalEnLetras: str(formData, "totalEnLetras"),
     capitalPrestadoPesosCents: centsOrNull(formData, "capitalPrestadoPesosCents"),

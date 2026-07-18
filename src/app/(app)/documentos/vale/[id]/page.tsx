@@ -66,6 +66,7 @@ export default async function EditarValePage({ params }: { params: Promise<{ id:
           fecha: toDateInput(vale.fecha),
           clienteNombre: vale.cliente?.nombre ?? "",
           clienteContacto: vale.cliente?.contacto ?? "",
+          moneda: vale.moneda ?? "UYU",
           totalPesosCents: pesosUnits(vale.totalPesosCents),
           totalEnLetras: vale.totalEnLetras ?? "",
           capitalPrestadoPesosCents: pesosUnits(vale.capitalPrestadoPesosCents),
