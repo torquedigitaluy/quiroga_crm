@@ -841,14 +841,25 @@ model Vale {
   fechaPrimeraCuota       DateTime?
   observaciones           String?
 
-  // Responsables del pago — exactamente dos firmantes, cada uno con espacio
-  // en blanco para firmar a mano sobre el impreso (sin firma digital).
+  // Vale legal (montos en pesos uruguayos). El monto en letras queda editable.
+  totalPesosCents           Int?
+  totalEnLetras             String?
+  capitalPrestadoPesosCents Int?
+  montoCuotaPesosCents      Int?
+  montoCuotaEnLetras        String?
+  acreedores                String? @default("Georgina Villegas Castro, CI 4.785.148-0 y Jorge Daniel Quiroga Sanabria, CI 3.283.578-8")
+
+  // Responsables del pago — hasta tres firmantes, cada uno con espacio en
+  // blanco para firmar a mano sobre el impreso (sin firma digital).
   firmante1Nombre    String?
   firmante1Ci        String?
   firmante1Domicilio String?
   firmante2Nombre    String?
   firmante2Ci        String?
   firmante2Domicilio String?
+  firmante3Nombre    String?
+  firmante3Ci        String?
+  firmante3Domicilio String?
 
   creadoPorId String?
   creadoPor   User?     @relation("CreadorVale", fields: [creadoPorId], references: [id])

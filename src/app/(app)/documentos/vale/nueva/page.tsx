@@ -2,7 +2,6 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { ValeForm, type FinanciacionPropiaOption } from "@/components/documentos/ValeForm";
 import { createVale } from "../actions";
-import { centsToUnits } from "@/lib/money";
 
 export default async function NuevoValePage() {
   await assertCan("docs.generate_vale");
@@ -19,11 +18,8 @@ export default async function NuevoValePage() {
     label: p.nombre,
     clienteNombre: p.nombre,
     clienteContacto: p.contacto ?? p.cliente?.contacto ?? "",
-    montoFinanciadoUsd: centsToUnits(p.montoFinanciadoUsdCents),
     cantidadCuotas: p.cantidadCuotas,
-    montoCuotaUsd: centsToUnits(p.montoCuotaUsdCents),
     diaVencimientoMensual: p.diaVencimientoMensual,
-    fechaPrimeraCuota: p.fechaPrimeraCuota ? p.fechaPrimeraCuota.toISOString().slice(0, 10) : null,
   }));
 
   return (

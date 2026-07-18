@@ -27,11 +27,6 @@ function centsOrNull(formData: FormData, field: string): number | null {
   return Number.isNaN(n) ? null : unitsToCents(n);
 }
 
-function dateOrNull(formData: FormData, field: string): Date | null {
-  const v = String(formData.get(field) ?? "").trim();
-  return v ? new Date(v) : null;
-}
-
 async function buildData(formData: FormData) {
   const financiacionPropiaId = str(formData, "financiacionPropiaId");
 
@@ -46,19 +41,24 @@ async function buildData(formData: FormData) {
     financiacionPropiaId,
     clienteId,
     fecha: str(formData, "fecha") ? new Date(String(formData.get("fecha"))) : new Date(),
-    condiciones: str(formData, "condiciones"),
-    montoFinanciadoUsdCents: centsOrNull(formData, "montoFinanciadoUsdCents"),
+    // Importes del vale (pesos uruguayos)
+    totalPesosCents: centsOrNull(formData, "totalPesosCents"),
+    totalEnLetras: str(formData, "totalEnLetras"),
+    capitalPrestadoPesosCents: centsOrNull(formData, "capitalPrestadoPesosCents"),
+    montoCuotaPesosCents: centsOrNull(formData, "montoCuotaPesosCents"),
+    montoCuotaEnLetras: str(formData, "montoCuotaEnLetras"),
+    acreedores: str(formData, "acreedores"),
     cantidadCuotas: intOrNull(formData, "cantidadCuotas"),
-    montoCuotaUsdCents: centsOrNull(formData, "montoCuotaUsdCents"),
     diaVencimientoMensual: intOrNull(formData, "diaVencimientoMensual"),
-    fechaPrimeraCuota: dateOrNull(formData, "fechaPrimeraCuota"),
-    observaciones: str(formData, "observaciones"),
     firmante1Nombre: str(formData, "firmante1Nombre"),
     firmante1Ci: str(formData, "firmante1Ci"),
     firmante1Domicilio: str(formData, "firmante1Domicilio"),
     firmante2Nombre: str(formData, "firmante2Nombre"),
     firmante2Ci: str(formData, "firmante2Ci"),
     firmante2Domicilio: str(formData, "firmante2Domicilio"),
+    firmante3Nombre: str(formData, "firmante3Nombre"),
+    firmante3Ci: str(formData, "firmante3Ci"),
+    firmante3Domicilio: str(formData, "firmante3Domicilio"),
   };
 }
 

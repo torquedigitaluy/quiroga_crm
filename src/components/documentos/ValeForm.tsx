@@ -8,56 +8,70 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { numeroALetras } from "@/lib/numeroALetras";
 
 export type FinanciacionPropiaOption = {
   id: string;
   label: string;
   clienteNombre: string;
   clienteContacto: string;
-  montoFinanciadoUsd: number;
   cantidadCuotas: number;
-  montoCuotaUsd: number;
   diaVencimientoMensual: number;
-  fechaPrimeraCuota: string | null;
 };
 
 export type ValeFormValues = {
   fecha: string;
   clienteNombre: string;
   clienteContacto: string;
-  condiciones: string;
-  montoFinanciadoUsdCents: string;
+  totalPesosCents: string;
+  totalEnLetras: string;
+  capitalPrestadoPesosCents: string;
+  acreedores: string;
   cantidadCuotas: string;
-  montoCuotaUsdCents: string;
+  montoCuotaPesosCents: string;
+  montoCuotaEnLetras: string;
   diaVencimientoMensual: string;
-  fechaPrimeraCuota: string;
-  observaciones: string;
   firmante1Nombre: string;
   firmante1Ci: string;
   firmante1Domicilio: string;
   firmante2Nombre: string;
   firmante2Ci: string;
   firmante2Domicilio: string;
+  firmante3Nombre: string;
+  firmante3Ci: string;
+  firmante3Domicilio: string;
 };
+
+const ACREEDORES_DEFAULT =
+  "Georgina Villegas Castro, CI 4.785.148-0 y Jorge Daniel Quiroga Sanabria, CI 3.283.578-8";
 
 const EMPTY: ValeFormValues = {
   fecha: new Date().toISOString().slice(0, 10),
   clienteNombre: "",
   clienteContacto: "",
-  condiciones: "",
-  montoFinanciadoUsdCents: "",
-  cantidadCuotas: "",
-  montoCuotaUsdCents: "",
+  totalPesosCents: "",
+  totalEnLetras: "",
+  capitalPrestadoPesosCents: "",
+  acreedores: ACREEDORES_DEFAULT,
+  cantidadCuotas: "36",
+  montoCuotaPesosCents: "",
+  montoCuotaEnLetras: "",
   diaVencimientoMensual: "10",
-  fechaPrimeraCuota: "",
-  observaciones: "",
   firmante1Nombre: "",
   firmante1Ci: "",
   firmante1Domicilio: "",
   firmante2Nombre: "",
   firmante2Ci: "",
   firmante2Domicilio: "",
+  firmante3Nombre: "",
+  firmante3Ci: "",
+  firmante3Domicilio: "",
 };
+
+function letras(pesosStr: string): string {
+  const n = parseInt(pesosStr, 10);
+  return Number.isNaN(n) ? "" : numeroALetras(n).toLowerCase();
+}
 
 function Field({
   label,
@@ -99,7 +113,14 @@ export function ValeForm({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  const update = (field: keyof ValeFormValues, value: string) => setValues((v) => ({ ...v, [field]: value }));
+  // Al cambiar el importe total o el de cuota, se completa el monto en letras.
+  const update = (field: keyof ValeFormValues, value: string) =>
+    setValues((v) => {
+      const next = { ...v, [field]: value };
+      if (field === "totalPesosCents") next.totalEnLetras = letras(value);
+      if (field === "montoCuotaPesosCents") next.montoCuotaEnLetras = letras(value);
+      return next;
+    });
 
   const handleSelectPlan = (id: string) => {
     setPlanId(id);
@@ -109,11 +130,8 @@ export function ValeForm({
       ...prev,
       clienteNombre: plan.clienteNombre,
       clienteContacto: plan.clienteContacto,
-      montoFinanciadoUsdCents: String(plan.montoFinanciadoUsd),
       cantidadCuotas: String(plan.cantidadCuotas),
-      montoCuotaUsdCents: String(plan.montoCuotaUsd),
       diaVencimientoMensual: String(plan.diaVencimientoMensual),
-      fechaPrimeraCuota: plan.fechaPrimeraCuota ?? "",
       firmante1Nombre: prev.firmante1Nombre || plan.clienteNombre,
     }));
   };
@@ -134,13 +152,15 @@ export function ValeForm({
   return (
     <form action={handleSubmit} className="flex flex-col gap-6">
       <input type="hidden" name="financiacionPropiaId" value={planId} />
+      <input type="hidden" name="clienteNombre" value={values.clienteNombre} />
+      <input type="hidden" name="clienteContacto" value={values.clienteContacto} />
 
       {planes.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <Label>Precargar desde un plan de Financiación Propia (opcional)</Label>
           <Select value={planId} onValueChange={handleSelectPlan}>
             <SelectTrigger>
-              <SelectValue placeholder="Elegí un plan para completar los datos automáticamente" />
+              <SelectValue placeholder="Elegí un plan para completar cuotas y cliente" />
             </SelectTrigger>
             <SelectContent>
               {planes.map((p) => (
@@ -154,49 +174,53 @@ export function ValeForm({
       )}
 
       <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-2">
-        <legend className="px-1 text-sm font-semibold text-foreground">Datos generales</legend>
-        <Field label="Fecha" field="fecha" values={values} onChange={update} type="date" />
-        <Field label="Cliente" field="clienteNombre" values={values} onChange={update} />
-        <Field label="Contacto" field="clienteContacto" values={values} onChange={update} />
+        <legend className="px-1 text-sm font-semibold text-foreground">Importes (pesos uruguayos)</legend>
+        <Field label="Total ($)" field="totalPesosCents" values={values} onChange={update} type="number" />
+        <div className="flex flex-col gap-1.5">
+          <Label>Total en letras</Label>
+          <Input
+            name="totalEnLetras"
+            value={values.totalEnLetras}
+            onChange={(e) => update("totalEnLetras", e.target.value)}
+            placeholder="Se completa solo desde el total"
+          />
+        </div>
+        <Field label="Capital prestado ($)" field="capitalPrestadoPesosCents" values={values} onChange={update} type="number" />
+        <Field label="Monto de cada cuota ($)" field="montoCuotaPesosCents" values={values} onChange={update} type="number" />
+        <div className="flex flex-col gap-1.5">
+          <Label>Cuota en letras</Label>
+          <Input
+            name="montoCuotaEnLetras"
+            value={values.montoCuotaEnLetras}
+            onChange={(e) => update("montoCuotaEnLetras", e.target.value)}
+            placeholder="Se completa solo desde la cuota"
+          />
+        </div>
+        <Field label="Cantidad de cuotas" field="cantidadCuotas" values={values} onChange={update} type="number" />
+        <Field label="Día de vencimiento mensual" field="diaVencimientoMensual" values={values} onChange={update} type="number" />
+        <Field label="Fecha del documento" field="fecha" values={values} onChange={update} type="date" />
       </fieldset>
 
-      <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
-        <legend className="px-1 text-sm font-semibold text-foreground">Condiciones del plan</legend>
-        <Field label="Monto financiado (US$)" field="montoFinanciadoUsdCents" values={values} onChange={update} type="number" />
-        <Field label="Cantidad de cuotas" field="cantidadCuotas" values={values} onChange={update} type="number" />
-        <Field label="Monto de cada cuota (US$)" field="montoCuotaUsdCents" values={values} onChange={update} type="number" />
-        <Field label="Día de vencimiento mensual" field="diaVencimientoMensual" values={values} onChange={update} type="number" />
-        <Field label="Fecha de la primera cuota" field="fechaPrimeraCuota" values={values} onChange={update} type="date" />
-        <div className="flex flex-col gap-1.5 sm:col-span-3">
-          <Label>Condiciones (texto libre)</Label>
-          <Textarea
-            name="condiciones"
-            rows={5}
-            value={values.condiciones}
-            onChange={(e) => update("condiciones", e.target.value)}
-            placeholder="Redacción de las condiciones del vale — se completa una sola vez con el texto definitivo."
-          />
+      <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4">
+        <legend className="px-1 text-sm font-semibold text-foreground">Acreedores</legend>
+        <div className="flex flex-col gap-1.5">
+          <Label>A la orden de</Label>
+          <Textarea name="acreedores" rows={2} value={values.acreedores} onChange={(e) => update("acreedores", e.target.value)} />
         </div>
       </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <Label>Observaciones</Label>
-        <Textarea name="observaciones" rows={3} value={values.observaciones} onChange={(e) => update("observaciones", e.target.value)} />
-      </div>
+      {([1, 2, 3] as const).map((n) => (
+        <fieldset key={n} className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
+          <legend className="px-1 text-sm font-semibold text-foreground">Firmante {n} (opcional)</legend>
+          <Field label="Nombre" field={`firmante${n}Nombre` as keyof ValeFormValues} values={values} onChange={update} />
+          <Field label="C.I / R.U.T" field={`firmante${n}Ci` as keyof ValeFormValues} values={values} onChange={update} />
+          <Field label="Domicilio" field={`firmante${n}Domicilio` as keyof ValeFormValues} values={values} onChange={update} />
+        </fieldset>
+      ))}
 
-      <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
-        <legend className="px-1 text-sm font-semibold text-foreground">Responsable del pago 1</legend>
-        <Field label="Nombre" field="firmante1Nombre" values={values} onChange={update} />
-        <Field label="Cédula" field="firmante1Ci" values={values} onChange={update} />
-        <Field label="Domicilio" field="firmante1Domicilio" values={values} onChange={update} />
-      </fieldset>
-
-      <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
-        <legend className="px-1 text-sm font-semibold text-foreground">Responsable del pago 2</legend>
-        <Field label="Nombre" field="firmante2Nombre" values={values} onChange={update} />
-        <Field label="Cédula" field="firmante2Ci" values={values} onChange={update} />
-        <Field label="Domicilio" field="firmante2Domicilio" values={values} onChange={update} />
-      </fieldset>
+      <p className="text-xs text-muted-foreground">
+        Las firmas quedan en blanco en el PDF para firmar a mano una vez impreso.
+      </p>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 

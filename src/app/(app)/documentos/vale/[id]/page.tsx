@@ -8,6 +8,10 @@ import { ValeForm, type FinanciacionPropiaOption } from "@/components/documentos
 import { centsToUnits } from "@/lib/money";
 import { updateVale, archiveVale } from "../actions";
 
+function pesosUnits(cents: number | null): string {
+  return cents != null ? String(centsToUnits(cents)) : "";
+}
+
 function toDateInput(d: Date | null): string {
   return d ? new Date(d).toISOString().slice(0, 10) : "";
 }
@@ -33,11 +37,8 @@ export default async function EditarValePage({ params }: { params: Promise<{ id:
     label: p.nombre,
     clienteNombre: p.nombre,
     clienteContacto: p.contacto ?? p.cliente?.contacto ?? "",
-    montoFinanciadoUsd: centsToUnits(p.montoFinanciadoUsdCents),
     cantidadCuotas: p.cantidadCuotas,
-    montoCuotaUsd: centsToUnits(p.montoCuotaUsdCents),
     diaVencimientoMensual: p.diaVencimientoMensual,
-    fechaPrimeraCuota: p.fechaPrimeraCuota ? p.fechaPrimeraCuota.toISOString().slice(0, 10) : null,
   }));
 
   return (
@@ -65,19 +66,23 @@ export default async function EditarValePage({ params }: { params: Promise<{ id:
           fecha: toDateInput(vale.fecha),
           clienteNombre: vale.cliente?.nombre ?? "",
           clienteContacto: vale.cliente?.contacto ?? "",
-          condiciones: vale.condiciones ?? "",
-          montoFinanciadoUsdCents: vale.montoFinanciadoUsdCents != null ? String(centsToUnits(vale.montoFinanciadoUsdCents)) : "",
+          totalPesosCents: pesosUnits(vale.totalPesosCents),
+          totalEnLetras: vale.totalEnLetras ?? "",
+          capitalPrestadoPesosCents: pesosUnits(vale.capitalPrestadoPesosCents),
+          montoCuotaPesosCents: pesosUnits(vale.montoCuotaPesosCents),
+          montoCuotaEnLetras: vale.montoCuotaEnLetras ?? "",
+          acreedores: vale.acreedores ?? "",
           cantidadCuotas: vale.cantidadCuotas != null ? String(vale.cantidadCuotas) : "",
-          montoCuotaUsdCents: vale.montoCuotaUsdCents != null ? String(centsToUnits(vale.montoCuotaUsdCents)) : "",
           diaVencimientoMensual: vale.diaVencimientoMensual != null ? String(vale.diaVencimientoMensual) : "",
-          fechaPrimeraCuota: toDateInput(vale.fechaPrimeraCuota),
-          observaciones: vale.observaciones ?? "",
           firmante1Nombre: vale.firmante1Nombre ?? "",
           firmante1Ci: vale.firmante1Ci ?? "",
           firmante1Domicilio: vale.firmante1Domicilio ?? "",
           firmante2Nombre: vale.firmante2Nombre ?? "",
           firmante2Ci: vale.firmante2Ci ?? "",
           firmante2Domicilio: vale.firmante2Domicilio ?? "",
+          firmante3Nombre: vale.firmante3Nombre ?? "",
+          firmante3Ci: vale.firmante3Ci ?? "",
+          firmante3Domicilio: vale.firmante3Domicilio ?? "",
         }}
         action={updateVale.bind(null, vale.id)}
         submitLabel="Guardar cambios"
