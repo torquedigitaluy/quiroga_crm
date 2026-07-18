@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { numeroALetras } from "@/lib/numeroALetras";
-import { ConformeForm } from "@/components/propia/ConformeForm";
+import { ConformeForm, type VehiculoStockOption } from "@/components/propia/ConformeForm";
 import { generateConforme } from "@/app/(app)/propia/actions";
 
 function toDateInput(d: Date | null): string {
@@ -17,9 +17,14 @@ export default async function GenerarConformePage({
   await assertCan("conforme.generate");
   const { id, cuotaId } = await params;
 
-  const [financiacion, cuota] = await Promise.all([
+  const [financiacion, cuota, vehiculos] = await Promise.all([
     db.financiacionPropia.findUnique({ where: { id }, include: { cliente: true, vehiculo: true } }),
     db.cuotaPropia.findUnique({ where: { id: cuotaId } }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, archivedAt: null },
+      orderBy: { marca: "asc" },
+      select: { id: true, marca: true, modelo: true, matricula: true },
+    }),
   ]);
   if (!financiacion || !cuota) notFound();
 
@@ -29,6 +34,14 @@ export default async function GenerarConformePage({
   const deudorNombre = cliente
     ? `${cliente.nombre} ${cliente.apellido ?? ""}`.trim().toUpperCase()
     : financiacion.nombre.toUpperCase();
+
+  const vehiculoOptions: VehiculoStockOption[] = vehiculos.map((v) => ({
+    id: v.id,
+    label: `${v.marca} ${v.modelo}${v.matricula ? ` — ${v.matricula}` : ""}`,
+    marca: v.marca,
+    modelo: v.modelo,
+    matricula: v.matricula,
+  }));
 
   const boundAction = generateConforme.bind(null, id, cuotaId);
 
@@ -45,6 +58,7 @@ export default async function GenerarConformePage({
       <ConformeForm
         action={boundAction}
         submitLabel="Generar recibo"
+        vehiculos={vehiculoOptions}
         initial={{
           montoUnits: String(montoUnits),
           montoEnLetras: numeroALetras(montoUnits),
@@ -52,6 +66,7 @@ export default async function GenerarConformePage({
           fechaPago: toDateInput(new Date()),
           deudorNombre,
           estado: "PAGADO",
+          vehiculoId: financiacion.vehiculoId ?? "",
         }}
       />
     </div>

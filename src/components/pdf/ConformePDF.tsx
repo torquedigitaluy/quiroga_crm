@@ -38,6 +38,7 @@ export type ConformePdfData = {
   fechaPago: Date;
   personaNombre: string;
   vehiculoLabel: string | null;
+  vehiculoMatricula: string | null;
 };
 
 export function ConformePDF({ data }: { data: ConformePdfData }) {
@@ -70,6 +71,12 @@ export function ConformePDF({ data }: { data: ConformePdfData }) {
             <>
               {" "}
               de la financiación del vehículo <Text style={styles.bold}>{data.vehiculoLabel}</Text>
+              {data.vehiculoMatricula ? (
+                <>
+                  {" "}
+                  (matrícula <Text style={styles.bold}>{data.vehiculoMatricula}</Text>)
+                </>
+              ) : null}
             </>
           ) : null}
           .{" "}
@@ -82,6 +89,15 @@ export function ConformePDF({ data }: { data: ConformePdfData }) {
         </Text>
 
         <View style={styles.resumen}>
+          {data.vehiculoLabel && (
+            <View style={{ width: "100%", marginBottom: 4 }}>
+              <Text style={styles.celdaLabel}>Vehículo</Text>
+              <Text style={styles.celdaValue}>
+                {data.vehiculoLabel}
+                {data.vehiculoMatricula ? ` · Matrícula ${data.vehiculoMatricula}` : ""}
+              </Text>
+            </View>
+          )}
           <View style={styles.celda}>
             <Text style={styles.celdaLabel}>Monto pagado</Text>
             <Text style={styles.celdaValue}>{montoTexto}</Text>

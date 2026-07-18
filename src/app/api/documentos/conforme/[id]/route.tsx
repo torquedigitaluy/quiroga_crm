@@ -21,7 +21,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     conforme.deudorNombre?.trim() ||
     (fin.cliente ? `${fin.cliente.nombre} ${fin.cliente.apellido ?? ""}`.trim() : "") ||
     fin.nombre;
-  const vehiculoLabel = fin.vehiculo ? `${fin.vehiculo.marca} ${fin.vehiculo.modelo}` : null;
+
+  // Vehículo: usa el snapshot guardado en el recibo; si no hay, cae al de la financiación.
+  const vMarca = conforme.vehMarca ?? fin.vehiculo?.marca ?? null;
+  const vModelo = conforme.vehModelo ?? fin.vehiculo?.modelo ?? null;
+  const vMatricula = conforme.vehMatricula ?? fin.vehiculo?.matricula ?? null;
+  const vehiculoLabel = vMarca || vModelo ? `${vMarca ?? ""} ${vModelo ?? ""}`.trim() : null;
 
   const buffer = await renderToBuffer(
     <ConformePDF
@@ -34,6 +39,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         fechaPago: conforme.fechaPago,
         personaNombre: persona,
         vehiculoLabel,
+        vehiculoMatricula: vMatricula,
       }}
     />,
   );

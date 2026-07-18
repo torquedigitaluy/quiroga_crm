@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { numeroALetras } from "@/lib/numeroALetras";
 
+export type VehiculoStockOption = { id: string; label: string; marca: string; modelo: string; matricula: string | null };
+
 export type ConformeInitial = {
   montoUnits?: string;
   montoEnLetras?: string;
@@ -16,14 +18,17 @@ export type ConformeInitial = {
   fechaPago?: string;
   deudorNombre?: string;
   estado?: string;
+  vehiculoId?: string;
 };
 
 export function ConformeForm({
   initial,
+  vehiculos = [],
   action,
   submitLabel = "Generar recibo",
 }: {
   initial?: ConformeInitial;
+  vehiculos?: VehiculoStockOption[];
   action: (formData: FormData) => Promise<void>;
   submitLabel?: string;
 }) {
@@ -32,6 +37,8 @@ export function ConformeForm({
   const [monto, setMonto] = useState(initial?.montoUnits ?? "");
   const [montoEnLetras, setMontoEnLetras] = useState(initial?.montoEnLetras ?? "");
   const [estado, setEstado] = useState(initial?.estado ?? "PAGADO");
+  const [vehiculoId, setVehiculoId] = useState(initial?.vehiculoId ?? "");
+  const vehSel = vehiculos.find((v) => v.id === vehiculoId);
   const router = useRouter();
 
   // El monto en letras se completa solo a partir del importe, pero queda editable.
@@ -64,6 +71,32 @@ export function ConformeForm({
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label>Se recibe de (nombre del cliente)</Label>
           <Input name="deudorNombre" defaultValue={initial?.deudorNombre ?? ""} required />
+        </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label>Vehículo asociado (del stock)</Label>
+          {/* El snapshot de marca/modelo/matrícula se guarda para que el recibo quede fijo. */}
+          <input type="hidden" name="vehiculoId" value={vehiculoId} />
+          <input type="hidden" name="vehMarca" value={vehSel?.marca ?? ""} />
+          <input type="hidden" name="vehModelo" value={vehSel?.modelo ?? ""} />
+          <input type="hidden" name="vehMatricula" value={vehSel?.matricula ?? ""} />
+          <Select value={vehiculoId || undefined} onValueChange={setVehiculoId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Elegí un vehículo del stock" />
+            </SelectTrigger>
+            <SelectContent>
+              {vehiculos.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {vehSel && (
+            <p className="text-xs text-muted-foreground">
+              {vehSel.marca} {vehSel.modelo}
+              {vehSel.matricula ? ` · Matrícula ${vehSel.matricula}` : ""}
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Monto pagado (U$S)</Label>

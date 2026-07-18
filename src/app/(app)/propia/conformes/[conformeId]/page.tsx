@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { assertCan } from "@/lib/permissions/engine";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConformeForm } from "@/components/propia/ConformeForm";
+import { ConformeForm, type VehiculoStockOption } from "@/components/propia/ConformeForm";
 import { updateConforme } from "@/app/(app)/propia/actions";
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -22,13 +22,27 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
   await assertCan("conforme.generate");
   const { conformeId } = await params;
 
-  const conforme = await db.conforme.findUnique({
-    where: { id: conformeId },
-    include: { cuota: true, financiacionPropia: { include: { cliente: true, vehiculo: true } } },
-  });
+  const [conforme, vehiculos] = await Promise.all([
+    db.conforme.findUnique({
+      where: { id: conformeId },
+      include: { cuota: true, financiacionPropia: { include: { cliente: true, vehiculo: true } } },
+    }),
+    db.vehiculo.findMany({
+      where: { esVehiculo: true, archivedAt: null },
+      orderBy: { marca: "asc" },
+      select: { id: true, marca: true, modelo: true, matricula: true },
+    }),
+  ]);
   if (!conforme) notFound();
 
   const fin = conforme.financiacionPropia;
+  const vehiculoOptions: VehiculoStockOption[] = vehiculos.map((v) => ({
+    id: v.id,
+    label: `${v.marca} ${v.modelo}${v.matricula ? ` — ${v.matricula}` : ""}`,
+    marca: v.marca,
+    modelo: v.modelo,
+    matricula: v.matricula,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,6 +80,7 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
       <ConformeForm
         action={updateConforme.bind(null, conforme.id)}
         submitLabel="Guardar cambios"
+        vehiculos={vehiculoOptions}
         initial={{
           montoUnits: String(Math.round(conforme.montoCuotaCents / 100)),
           montoEnLetras: conforme.montoEnLetras ?? "",
@@ -73,6 +88,7 @@ export default async function ConformeViewPage({ params }: { params: Promise<{ c
           fechaPago: toDateInput(conforme.fechaPago),
           deudorNombre: conforme.deudorNombre ?? "",
           estado: conforme.estado,
+          vehiculoId: conforme.vehiculoId ?? "",
         }}
       />
     </div>

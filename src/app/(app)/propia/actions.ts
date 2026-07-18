@@ -156,6 +156,10 @@ function conformeData(formData: FormData) {
     deudorDepartamentoDireccion: conformeStr(formData, "deudorDepartamentoDireccion"),
     deudorTelefono: conformeStr(formData, "deudorTelefono"),
     estado,
+    vehiculoId: conformeStr(formData, "vehiculoId"),
+    vehMarca: conformeStr(formData, "vehMarca"),
+    vehModelo: conformeStr(formData, "vehModelo"),
+    vehMatricula: conformeStr(formData, "vehMatricula"),
   };
 }
 

@@ -621,6 +621,14 @@ model Conforme {
   deudorDepartamentoDireccion String?
   deudorTelefono              String?
   estado                      EstadoConforme  @default(PAGADO)
+
+  // Vehículo asociado al recibo (se elige del stock; se guarda desnormalizado
+  // para que el comprobante quede fijo aunque después se edite el stock).
+  vehiculoId       String?
+  vehMarca         String?
+  vehModelo        String?
+  vehMatricula     String?
+
   createdAt            DateTime           @default(now())
 
   firmantes ConformeFirmante[]
