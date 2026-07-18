@@ -51,6 +51,7 @@ async function buildData(formData: FormData) {
     acreedores: str(formData, "acreedores"),
     cantidadCuotas: intOrNull(formData, "cantidadCuotas"),
     diaVencimientoMensual: intOrNull(formData, "diaVencimientoMensual"),
+    fechaPrimeraCuota: str(formData, "fechaPrimeraCuota") ? new Date(String(formData.get("fechaPrimeraCuota"))) : null,
     firmante1Nombre: str(formData, "firmante1Nombre"),
     firmante1Ci: str(formData, "firmante1Ci"),
     firmante1Domicilio: str(formData, "firmante1Domicilio"),

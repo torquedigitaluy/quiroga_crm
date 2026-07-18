@@ -17,6 +17,7 @@ export type FinanciacionPropiaOption = {
   clienteContacto: string;
   cantidadCuotas: number;
   diaVencimientoMensual: number;
+  fechaPrimeraCuota: string | null;
 };
 
 export type ValeFormValues = {
@@ -32,6 +33,7 @@ export type ValeFormValues = {
   montoCuotaPesosCents: string;
   montoCuotaEnLetras: string;
   diaVencimientoMensual: string;
+  fechaPrimeraCuota: string;
   firmante1Nombre: string;
   firmante1Ci: string;
   firmante1Domicilio: string;
@@ -59,6 +61,7 @@ const EMPTY: ValeFormValues = {
   montoCuotaPesosCents: "",
   montoCuotaEnLetras: "",
   diaVencimientoMensual: "10",
+  fechaPrimeraCuota: "",
   firmante1Nombre: "",
   firmante1Ci: "",
   firmante1Domicilio: "",
@@ -135,6 +138,7 @@ export function ValeForm({
       clienteContacto: plan.clienteContacto,
       cantidadCuotas: String(plan.cantidadCuotas),
       diaVencimientoMensual: String(plan.diaVencimientoMensual),
+      fechaPrimeraCuota: plan.fechaPrimeraCuota ?? prev.fechaPrimeraCuota,
       firmante1Nombre: prev.firmante1Nombre || plan.clienteNombre,
     }));
   };
@@ -213,7 +217,7 @@ export function ValeForm({
           />
         </div>
         <Field label="Cantidad de cuotas" field="cantidadCuotas" values={values} onChange={update} type="number" />
-        <Field label="Día de vencimiento mensual" field="diaVencimientoMensual" values={values} onChange={update} type="number" />
+        <Field label="Fecha de la 1ª cuota" field="fechaPrimeraCuota" values={values} onChange={update} type="date" />
         <Field label="Fecha del documento" field="fecha" values={values} onChange={update} type="date" />
       </fieldset>
 

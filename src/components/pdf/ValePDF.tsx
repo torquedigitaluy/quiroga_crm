@@ -50,6 +50,7 @@ export type ValePdfData = {
   montoCuotaPesosCents: number | null;
   montoCuotaEnLetras: string | null;
   diaVencimientoMensual: number | null;
+  fechaPrimeraCuota: Date | null;
   firmante1Nombre: string | null;
   firmante1Ci: string | null;
   firmante1Domicilio: string | null;
@@ -140,7 +141,7 @@ export function ValePDF({ data }: { data: ValePdfData }) {
       ? numeroALetras(Math.round(data.montoCuotaPesosCents / 100)).toLowerCase()
       : "________";
   const acreedores = data.acreedores?.trim() || ACREEDORES_DEFAULT;
-  const dia = data.diaVencimientoMensual ?? 10;
+  const primeraCuota = data.fechaPrimeraCuota ? fechaLarga(data.fechaPrimeraCuota) : "________";
   const m = data.moneda; // "UYU" | "USD"
   const monedaPalabra = m === "USD" ? "dólares americanos" : "pesos uruguayos";
 
@@ -164,7 +165,7 @@ export function ValePDF({ data }: { data: ValePdfData }) {
           solidaria, indivisible y libre de protesto a <Text style={styles.bold}>{acreedores}</Text> o a su orden, en{" "}
           {cuotasLetras} ({cuotasNum || "__"}) cuotas mensuales, iguales y consecutivas de{" "}
           <Text style={styles.bold}>{monto(data.montoCuotaPesosCents, m)}</Text> ({monedaPalabra} {cuotaLetras}) cada
-          una, venciendo la primera el <Text style={styles.bold}>{dia}</Text> de cada mes, y las restantes los mismos días de
+          una, venciendo la primera el <Text style={styles.bold}>{primeraCuota}</Text>, y las restantes los mismos días de
           los meses siguientes. Las cuotas se abonarán en la cuenta bancaria del Banco BBVA: Cuenta Corriente en moneda
           nacional N° 27192059 3697 Motors Zonamerica SAS, siendo los comprobantes de depósitos y/o transferencias
           bancarias como los únicos medios hábiles para acreditar los pagos.

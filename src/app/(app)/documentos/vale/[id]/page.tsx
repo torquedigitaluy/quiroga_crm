@@ -39,6 +39,7 @@ export default async function EditarValePage({ params }: { params: Promise<{ id:
     clienteContacto: p.contacto ?? p.cliente?.contacto ?? "",
     cantidadCuotas: p.cantidadCuotas,
     diaVencimientoMensual: p.diaVencimientoMensual,
+    fechaPrimeraCuota: p.fechaPrimeraCuota ? p.fechaPrimeraCuota.toISOString().slice(0, 10) : null,
   }));
 
   return (
@@ -75,6 +76,7 @@ export default async function EditarValePage({ params }: { params: Promise<{ id:
           acreedores: vale.acreedores ?? "",
           cantidadCuotas: vale.cantidadCuotas != null ? String(vale.cantidadCuotas) : "",
           diaVencimientoMensual: vale.diaVencimientoMensual != null ? String(vale.diaVencimientoMensual) : "",
+          fechaPrimeraCuota: toDateInput(vale.fechaPrimeraCuota),
           firmante1Nombre: vale.firmante1Nombre ?? "",
           firmante1Ci: vale.firmante1Ci ?? "",
           firmante1Domicilio: vale.firmante1Domicilio ?? "",

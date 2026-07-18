@@ -20,6 +20,7 @@ export default async function NuevoValePage() {
     clienteContacto: p.contacto ?? p.cliente?.contacto ?? "",
     cantidadCuotas: p.cantidadCuotas,
     diaVencimientoMensual: p.diaVencimientoMensual,
+    fechaPrimeraCuota: p.fechaPrimeraCuota ? p.fechaPrimeraCuota.toISOString().slice(0, 10) : null,
   }));
 
   return (
