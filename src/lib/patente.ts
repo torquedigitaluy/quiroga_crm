@@ -15,14 +15,21 @@ function vencimientoDate(anio: number, v: { mes: number; dia: number }): Date {
 }
 
 /**
- * Cantidad de las 6 cuotas anuales que ya deberían estar pagas. Si el
- * vehículo ya se entregó, el límite es la fecha de entrega (una cuota que
- * vence justo ese día cuenta como paga); si sigue en stock, el límite es hoy.
+ * Cantidad de las 6 cuotas anuales que le corresponden a la automotora.
+ * Límite superior: si el vehículo ya se entregó, la fecha de entrega (una
+ * cuota que vence justo ese día cuenta como paga); si sigue en stock, hoy.
+ * Límite inferior: la fecha de compra — las cuotas que vencieron antes de
+ * que el vehículo ingresara no son un gasto de la automotora.
  */
-export function cuotasPatentePagasAutomaticas(hoy: Date, fechaVenta: Date | null): number {
+export function cuotasPatentePagasAutomaticas(hoy: Date, fechaCompra: Date | null, fechaVenta: Date | null): number {
   const limite = fechaVenta ?? hoy;
   const anio = limite.getFullYear();
-  return PATENTE_VENCIMIENTOS.filter((v) => vencimientoDate(anio, v) <= limite).length;
+  return PATENTE_VENCIMIENTOS.filter((v) => {
+    const fecha = vencimientoDate(anio, v);
+    if (fecha > limite) return false;
+    if (fechaCompra && fecha < fechaCompra) return false;
+    return true;
+  }).length;
 }
 
 /** Próxima fecha de vencimiento a partir de "hoy" (o null si ya pasaron todas este año). */

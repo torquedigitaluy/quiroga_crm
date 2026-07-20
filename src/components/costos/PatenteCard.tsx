@@ -20,6 +20,7 @@ export function PatenteCard({
   patenteAnualCents,
   patenteCuotaCents,
   patenteNoSumar,
+  fechaCompra,
   fechaVenta,
   editable,
   onToggleNoSumar,
@@ -27,6 +28,7 @@ export function PatenteCard({
   patenteAnualCents: number | null;
   patenteCuotaCents: number | null;
   patenteNoSumar: boolean;
+  fechaCompra: Date | null;
   fechaVenta: Date | null;
   editable: boolean;
   onToggleNoSumar: (noSumar: boolean) => Promise<void>;
@@ -34,7 +36,7 @@ export function PatenteCard({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const hoy = new Date();
-  const cuotasPagas = cuotasPatentePagasAutomaticas(hoy, fechaVenta);
+  const cuotasPagas = cuotasPatentePagasAutomaticas(hoy, fechaCompra, fechaVenta);
   const proximoVencimiento = fechaVenta ? null : proximoVencimientoPatente(hoy);
 
   const handleToggle = () => {
@@ -64,15 +66,15 @@ export function PatenteCard({
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Stat label="Patente anual" value={patenteAnualCents ? formatCents(patenteAnualCents, "UYU") : "—"} />
             <Stat label="Valor de cuota" value={patenteCuotaCents ? formatCents(patenteCuotaCents, "UYU") : "—"} />
-            <Stat label="Cuotas pagas" value={`${cuotasPagas} / 6`} />
+            <Stat label="Cuotas a cargo de la automotora" value={`${cuotasPagas} / 6`} />
             <Stat
               label="Próximo vencimiento"
               value={proximoVencimiento ? proximoVencimiento.toLocaleDateString("es-UY") : fechaVenta ? "—" : "Ninguno este año"}
             />
           </CardContent>
           <CardContent className="pt-0 text-xs text-muted-foreground">
-            Se calcula solo según el calendario fijo de vencimientos (10/ene, 20/mar, 20/may, 20/jul, 20/sep, 20/nov) —
-            no requiere carga manual.
+            Se calcula según el calendario fijo de vencimientos (10/ene, 20/mar, 20/may, 20/jul, 20/sep, 20/nov), solo
+            contando las cuotas que vencen desde la fecha de compra en adelante — no requiere carga manual.
           </CardContent>
         </>
       )}

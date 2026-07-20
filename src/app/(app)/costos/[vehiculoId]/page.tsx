@@ -78,6 +78,7 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
         patenteAnualCents={vehiculo.patenteAnualCents}
         patenteCuotaCents={vehiculo.patenteCuotaCents}
         patenteNoSumar={vehiculo.patenteNoSumar}
+        fechaCompra={costeo.fechaCompra}
         fechaVenta={costeo.fechaVenta}
         editable={editable}
         onToggleNoSumar={boundToggleNoSumarPatente}
