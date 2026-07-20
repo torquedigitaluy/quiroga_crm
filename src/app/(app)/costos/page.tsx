@@ -36,6 +36,7 @@ export default async function CostosIndexPage() {
   const totalGastos = computados.reduce((sum, c) => sum + (c?.totalGastosUsdCents ?? 0), 0);
   const totalGanancia = computados.reduce((sum, c) => sum + (c?.gananciaFinalUsdCents ?? 0), 0);
   const totalCosto = computados.reduce((sum, c) => sum + (c?.costoTotalUsdCents ?? 0), 0);
+  const totalVentaReal = vehiculos.reduce((sum, v) => sum + (v.costeo?.precioVentaRealUsdCents ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,6 +49,7 @@ export default async function CostosIndexPage() {
           <StatCard label="Total gastos" value={formatCents(totalGastos, "USD")} />
           <StatCard label="Total ganancia" value={formatCents(totalGanancia, "USD")} variant={totalGanancia < 0 ? "danger" : "success"} />
           <StatCard label="Costo total" value={formatCents(totalCosto, "USD")} />
+          <StatCard label="Total venta real" value={formatCents(totalVentaReal, "USD")} />
         </div>
       </div>
 
