@@ -70,9 +70,8 @@ export async function createVenta(formData: FormData) {
     },
   });
 
-  if (data.vehiculoId) {
-    await db.vehiculo.update({ where: { id: data.vehiculoId }, data: { estado: "VENDIDO" } });
-  }
+  // Registrar la venta NO cambia el estado del vehículo en el stock: ese estado
+  // (Publicado / Señado / Vendido / Taller) se maneja a mano desde el stock.
   await logAudit({
     accion: "CREAR",
     entidad: "Venta",
@@ -82,7 +81,6 @@ export async function createVenta(formData: FormData) {
 
   revalidatePath("/ventas");
   revalidatePath("/ventas/planilla");
-  revalidatePath("/stock");
   // Un vendedor sin acceso al listado completo vuelve a su propia planilla.
   redirect((await can("ventas.view_full")) ? "/ventas" : "/ventas/planilla");
 }
