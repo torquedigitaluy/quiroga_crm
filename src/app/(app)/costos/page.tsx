@@ -5,6 +5,19 @@ import { formatCents } from "@/lib/money";
 import { computeCosteo } from "@/lib/costeo";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { StatusBadge } from "@/components/stock/StatusBadge";
+import { Card, CardContent } from "@/components/ui/card";
+
+function StatCard({ label, value, variant = "default" }: { label: string; value: string; variant?: "default" | "success" | "danger" }) {
+  const color = variant === "success" ? "text-success" : variant === "danger" ? "text-danger" : "text-foreground";
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-1 p-4">
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className={`text-lg font-semibold ${color}`}>{value}</span>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default async function CostosIndexPage() {
   await assertCan("costos.view");
@@ -19,11 +32,23 @@ export default async function CostosIndexPage() {
   ]);
   const configRateMicros = config?.tipoCambioGlobalMicros ?? 400000;
 
+  const computados = vehiculos.map((v) => (v.costeo ? computeCosteo(v.costeo, v.costeo.gastos, configRateMicros) : null));
+  const totalGastos = computados.reduce((sum, c) => sum + (c?.totalGastosUsdCents ?? 0), 0);
+  const totalGanancia = computados.reduce((sum, c) => sum + (c?.gananciaFinalUsdCents ?? 0), 0);
+  const totalCosto = computados.reduce((sum, c) => sum + (c?.costoTotalUsdCents ?? 0), 0);
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Costos de Vehículos</h1>
-        <p className="text-sm text-muted-foreground">Costo, precio ideal y ganancia por vehículo.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Costos de Vehículos</h1>
+          <p className="text-sm text-muted-foreground">Costo, precio ideal y ganancia por vehículo.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <StatCard label="Total gastos" value={formatCents(totalGastos, "USD")} />
+          <StatCard label="Total ganancia" value={formatCents(totalGanancia, "USD")} variant={totalGanancia < 0 ? "danger" : "success"} />
+          <StatCard label="Costo total" value={formatCents(totalCosto, "USD")} />
+        </div>
       </div>
 
       <Table>

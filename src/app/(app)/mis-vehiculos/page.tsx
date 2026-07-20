@@ -8,7 +8,7 @@ export default async function MisVehiculosPage() {
   const user = await assertCan("costos.view_own");
 
   const vehiculos = await db.vehiculo.findMany({
-    where: { responsableId: user.id, esVehiculo: true, archivedAt: null },
+    where: { responsables: { some: { id: user.id } }, esVehiculo: true, archivedAt: null },
     orderBy: { fechaIngreso: "desc" },
   });
 

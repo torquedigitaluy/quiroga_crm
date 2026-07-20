@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { assertCan, getEffectivePermissions, getCurrentUser } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { logAudit } from "@/lib/audit";
+import { resolveResponsableIds } from "@/lib/responsablesCostos";
 import { createVehiculoSchema, vehiculoSchema, type VehiculoInput } from "./schema";
 
 const VEHICLE_FIELDS = [
@@ -37,7 +38,6 @@ FIELD_PERMISSIONS.ubicacion = "stock.move_location";
 FIELD_PERMISSIONS.estado = "stock.edit_status";
 FIELD_PERMISSIONS.propietario = "stock.edit_owner";
 FIELD_PERMISSIONS.tipoPropiedad = "stock.edit_owner";
-FIELD_PERMISSIONS.responsableId = "stock.edit_owner";
 
 function formDataToRaw(formData: FormData): Record<string, unknown> {
   const raw: Record<string, unknown> = {};
@@ -68,8 +68,13 @@ export async function createVehiculo(formData: FormData) {
   // Va al final del orden manual, con hueco para que el drag & drop siempre
   // tenga slots distintos con los que reordenar.
   const ultimo = await db.vehiculo.findFirst({ orderBy: { orden: "desc" }, select: { orden: true } });
+  const responsableIds = await resolveResponsableIds(parsed.data.propietario);
   const vehiculo = await db.vehiculo.create({
-    data: { ...parsed.data, orden: (ultimo?.orden ?? 0) + 100 },
+    data: {
+      ...parsed.data,
+      orden: (ultimo?.orden ?? 0) + 100,
+      responsables: { connect: responsableIds.map((id) => ({ id })) },
+    },
   });
   await logAudit({
     accion: "CREAR",
@@ -106,7 +111,15 @@ export async function updateVehiculo(id: string, formData: FormData) {
     throw new Error("No tenés permiso para editar estos campos.");
   }
 
-  await db.vehiculo.update({ where: { id }, data: allowed });
+  const updateData: Record<string, unknown> = { ...allowed };
+  // El propietario se editó en este submit: recalcula quién es responsable
+  // de costos a partir del nuevo valor.
+  if ("propietario" in allowed) {
+    const responsableIds = await resolveResponsableIds(allowed.propietario);
+    updateData.responsables = { set: responsableIds.map((rid) => ({ id: rid })) };
+  }
+
+  await db.vehiculo.update({ where: { id }, data: updateData });
   await logAudit({
     accion: "EDITAR",
     entidad: "Vehículo",

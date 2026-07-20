@@ -15,12 +15,15 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
   const currentUser = await requireUser();
   const { vehiculoId } = await params;
 
-  const vehiculo = await db.vehiculo.findUnique({ where: { id: vehiculoId } });
+  const vehiculo = await db.vehiculo.findUnique({
+    where: { id: vehiculoId },
+    include: { responsables: { select: { id: true } } },
+  });
   if (!vehiculo) notFound();
 
   // Puede ver/editar si tiene el permiso global o si es responsable del vehículo.
   const currentPerms = await getEffectivePermissions(currentUser.id);
-  const esResponsable = vehiculo.responsableId === currentUser.id;
+  const esResponsable = vehiculo.responsables.some((r) => r.id === currentUser.id);
   if (!currentPerms.has("costos.view") && !esResponsable) {
     throw new Error('No autorizado: falta el permiso "costos.view"');
   }

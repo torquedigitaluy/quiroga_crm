@@ -270,7 +270,7 @@ async function DashboardTaller() {
 
 async function DashboardCostosPropios({ responsableId }: { responsableId: string }) {
   const vehiculos = await db.vehiculo.findMany({
-    where: { responsableId, esVehiculo: true, archivedAt: null },
+    where: { responsables: { some: { id: responsableId } }, esVehiculo: true, archivedAt: null },
     include: { costeo: true },
   });
 

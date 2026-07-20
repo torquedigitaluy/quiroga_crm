@@ -314,8 +314,11 @@ model Vehiculo {
   fechaIngreso        DateTime       @default(now())
   // Orden manual del listado de stock (drag & drop). Menor = más arriba.
   orden               Int            @default(0)
-  responsableId       String?
-  responsable         User?          @relation("VehiculoResponsable", fields: [responsableId], references: [id])
+  // Quién puede editar los costos de este vehículo. Se deriva automáticamente
+  // de `propietario` (si dice "Jorge"/"Pepe" van esos, si dice ambos van los
+  // dos); solo se asigna a mano cuando el propietario es un consignatario
+  // externo (propietario = "Consignado").
+  responsables        User[]         @relation("VehiculoResponsable")
   archivedAt          DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt

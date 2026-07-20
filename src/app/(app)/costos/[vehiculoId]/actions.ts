@@ -23,9 +23,9 @@ async function assertPuedeEditarCostos(vehiculoId: string) {
   if (perms.has("costos.edit")) return user;
   const vehiculo = await db.vehiculo.findUnique({
     where: { id: vehiculoId },
-    select: { responsableId: true },
+    select: { responsables: { select: { id: true } } },
   });
-  if (vehiculo?.responsableId === user.id) return user;
+  if (vehiculo?.responsables.some((r) => r.id === user.id)) return user;
   throw new Error("No autorizado: no sos responsable de este vehículo.");
 }
 
