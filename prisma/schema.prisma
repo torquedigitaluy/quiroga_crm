@@ -565,6 +565,22 @@ model DescuentoEmpleado {
   createdAt  DateTime @default(now())
 }
 
+// Comentarios de la planilla de asistencia, agrupados por mes. Quedan como un
+// histórico con fecha; son editables. No hay FK a User para que el registro
+// sobreviva aunque se borre el usuario (se guarda el nombre del autor).
+model ComentarioAsistencia {
+  id          String   @id @default(cuid())
+  anio        Int
+  mes         Int // 1-12
+  texto       String
+  autorId     String?
+  autorNombre String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([anio, mes])
+}
+
 // ---------- Financiación Propia (Jorge Autos) + Conformes + Deudas ----------
 
 model FinanciacionPropia {

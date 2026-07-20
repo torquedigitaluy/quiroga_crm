@@ -3,6 +3,7 @@ import { assertCan, getCurrentUser, getEffectivePermissions } from "@/lib/permis
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AttendanceGrid } from "@/components/personal/AttendanceGrid";
+import { AttendanceComments } from "@/components/personal/AttendanceComments";
 
 function monthDays(year: number, month: number): string[] {
   const days: string[] = [];
@@ -26,9 +27,10 @@ export default async function AsistenciaPage({ searchParams }: { searchParams: P
   const rangeStart = new Date(Date.UTC(year, month - 1, 1));
   const rangeEnd = new Date(Date.UTC(year, month, 1));
 
-  const [empleados, asistencias, user] = await Promise.all([
+  const [empleados, asistencias, comentarios, user] = await Promise.all([
     db.empleado.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
     db.asistenciaDia.findMany({ where: { fecha: { gte: rangeStart, lt: rangeEnd } } }),
+    db.comentarioAsistencia.findMany({ where: { anio: year, mes: month }, orderBy: { createdAt: "desc" } }),
     getCurrentUser(),
   ]);
   const perms = user ? await getEffectivePermissions(user.id) : new Set<string>();
@@ -60,6 +62,19 @@ export default async function AsistenciaPage({ searchParams }: { searchParams: P
       </form>
 
       <AttendanceGrid empleados={empleados} days={days} initialAttendance={initialAttendance} editable={editable} />
+
+      <AttendanceComments
+        anio={year}
+        mes={month}
+        editable={editable}
+        comentarios={comentarios.map((c) => ({
+          id: c.id,
+          texto: c.texto,
+          autorNombre: c.autorNombre,
+          createdAt: c.createdAt.toISOString(),
+          updatedAt: c.updatedAt.toISOString(),
+        }))}
+      />
     </div>
   );
 }

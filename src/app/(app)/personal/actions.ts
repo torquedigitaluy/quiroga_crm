@@ -43,6 +43,36 @@ export async function setAsistencia(empleadoId: string, fechaIso: string, estado
   revalidatePath("/personal/asistencia");
 }
 
+export async function addComentarioAsistencia(anio: number, mes: number, formData: FormData) {
+  const user = await assertCan("personal.edit");
+  const texto = String(formData.get("texto") ?? "").trim();
+  if (!texto) throw new Error("El comentario no puede estar vacío");
+
+  const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { nombre: true } });
+
+  await db.comentarioAsistencia.create({
+    data: { anio, mes, texto, autorId: user.id, autorNombre: dbUser?.nombre ?? user.name ?? user.email ?? null },
+  });
+
+  revalidatePath("/personal/asistencia");
+}
+
+export async function updateComentarioAsistencia(id: string, formData: FormData) {
+  await assertCan("personal.edit");
+  const texto = String(formData.get("texto") ?? "").trim();
+  if (!texto) throw new Error("El comentario no puede estar vacío");
+
+  await db.comentarioAsistencia.update({ where: { id }, data: { texto } });
+
+  revalidatePath("/personal/asistencia");
+}
+
+export async function deleteComentarioAsistencia(id: string) {
+  await assertCan("personal.edit");
+  await db.comentarioAsistencia.delete({ where: { id } });
+  revalidatePath("/personal/asistencia");
+}
+
 export async function addDescuento(empleadoId: string, formData: FormData) {
   await assertCan("personal.edit");
 
