@@ -53,7 +53,7 @@ export default async function CostosIndexPage() {
         </div>
       </div>
 
-      <Table>
+      <Table containerClassName="max-h-[70vh] overflow-y-auto">
         <TableHeader className="sticky top-0 z-10 shadow-sm">
           <TableRow>
             <TableHead>Vehículo</TableHead>
