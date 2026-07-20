@@ -16,6 +16,7 @@ export function CosteoSummary({
   rateMicros,
   precioCompraUsdCents,
   totalGastosUsdCents,
+  patenteUsdCents = 0,
   costoTotalUsdCents,
   gananciaIdealUsdCents,
   precioVentaIdealUsdCents,
@@ -25,6 +26,7 @@ export function CosteoSummary({
   rateMicros: number;
   precioCompraUsdCents: number;
   totalGastosUsdCents: number;
+  patenteUsdCents?: number;
   costoTotalUsdCents: number;
   gananciaIdealUsdCents: number;
   precioVentaIdealUsdCents: number;
@@ -39,6 +41,7 @@ export function CosteoSummary({
       <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Precio de compra" value={formatCents(precioCompraUsdCents, "USD")} />
         <Stat label="Total de gastos" value={formatCents(totalGastosUsdCents, "USD")} />
+        <Stat label="Patente (incluida)" value={formatCents(patenteUsdCents, "USD")} emphasis="muted" />
         <Stat label="Costo total" value={formatCents(costoTotalUsdCents, "USD")} emphasis="muted" />
         <Stat label="Ganancia ideal (15%)" value={formatCents(gananciaIdealUsdCents, "USD")} />
         <Stat label="Precio de venta ideal" value={formatCents(precioVentaIdealUsdCents, "USD")} />

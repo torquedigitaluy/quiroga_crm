@@ -198,6 +198,8 @@ export function VehiculoForm({
               <SelectItem value="Jorge">Jorge</SelectItem>
               <SelectItem value="Pepe">Pepe</SelectItem>
               <SelectItem value="Jorge y Pepe">Jorge y Pepe</SelectItem>
+              <SelectItem value="Jorge y Emilio">Jorge y Emilio</SelectItem>
+              <SelectItem value="Jorge y Francisco">Jorge y Francisco</SelectItem>
               <SelectItem value="Consignado">Consignado</SelectItem>
             </SelectContent>
           </Select>

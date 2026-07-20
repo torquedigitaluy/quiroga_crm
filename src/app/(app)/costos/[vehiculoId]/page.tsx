@@ -42,7 +42,10 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
   const config = await db.configuracion.findUnique({ where: { id: 1 } });
   const configRateMicros = config?.tipoCambioGlobalMicros ?? 400000;
 
-  const computed = computeCosteo(costeo, costeo.gastos, configRateMicros);
+  const computed = computeCosteo(costeo, costeo.gastos, configRateMicros, {
+    patenteCuotaCents: vehiculo.patenteCuotaCents,
+    patenteNoSumar: vehiculo.patenteNoSumar,
+  });
 
   const editable = currentPerms.has("costos.edit") || esResponsable;
 
@@ -67,6 +70,7 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
         rateMicros={computed.rateMicros}
         precioCompraUsdCents={costeo.precioCompraUsdCents}
         totalGastosUsdCents={computed.totalGastosUsdCents}
+        patenteUsdCents={computed.patenteUsdCents}
         costoTotalUsdCents={computed.costoTotalUsdCents}
         gananciaIdealUsdCents={computed.gananciaIdealUsdCents}
         precioVentaIdealUsdCents={computed.precioVentaIdealUsdCents}

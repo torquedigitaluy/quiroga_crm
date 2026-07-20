@@ -128,7 +128,10 @@ async function DashboardEmpresa() {
 
   const gananciaPorVehiculo: GananciaRow[] = costeos
     .map((c) => {
-      const computed = computeCosteo(c, c.gastos, configRateMicros);
+      const computed = computeCosteo(c, c.gastos, configRateMicros, {
+        patenteCuotaCents: c.vehiculo.patenteCuotaCents,
+        patenteNoSumar: c.vehiculo.patenteNoSumar,
+      });
       return {
         vehiculoId: c.vehiculoId,
         label: `${c.vehiculo.marca} ${c.vehiculo.modelo}${c.vehiculo.matricula ? ` (${c.vehiculo.matricula})` : ""}`,
