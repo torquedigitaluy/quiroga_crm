@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { centsToUnits } from "@/lib/money";
+import { PROPIETARIO_OPTIONS } from "@/lib/propietarios";
 
 export type VehiculoFormData = {
   id?: string;
@@ -195,12 +196,11 @@ export function VehiculoForm({
               <SelectValue placeholder="Seleccioná…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Jorge">Jorge</SelectItem>
-              <SelectItem value="Pepe">Pepe</SelectItem>
-              <SelectItem value="Jorge y Pepe">Jorge y Pepe</SelectItem>
-              <SelectItem value="Jorge y Emilio">Jorge y Emilio</SelectItem>
-              <SelectItem value="Jorge y Francisco">Jorge y Francisco</SelectItem>
-              <SelectItem value="Consignado">Consignado</SelectItem>
+              {PROPIETARIO_OPTIONS.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">

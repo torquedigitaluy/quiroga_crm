@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/stock/StatusBadge";
 import { CostosSortSelect } from "@/components/costos/CostosSortSelect";
+import { PROPIETARIO_OPTIONS } from "@/lib/propietarios";
 import { Card, CardContent } from "@/components/ui/card";
 
 type SearchParams = {
@@ -19,10 +20,6 @@ type SearchParams = {
   modelo?: string;
   propietario?: string;
 };
-
-// Valores especiales del filtro de propietario.
-const PROP_COMPARTIDOS = "__compartidos__";
-const PROP_INDIVIDUAL = "__individual__";
 
 const ESTADO_OPTIONS: { value: string; label: string }[] = [
   { value: "PUBLICADO", label: "Publicado" },
@@ -40,19 +37,6 @@ function parseSortCombo(sortCombo: string | undefined): { key: string; field: st
   const [key, dir] = (sortCombo ?? "marca_asc").split("_");
   const field = SORT_FIELD_MAP[key] ?? "marca";
   return { key, field, dir: dir === "desc" ? "desc" : "asc" };
-}
-
-// Traduce el filtro de propietario a una condición de Prisma. Un propietario
-// "compartido" es el que menciona a dos personas (contiene " y ").
-function propietarioWhere(propietario: string | undefined): Prisma.VehiculoWhereInput {
-  if (!propietario) return {};
-  if (propietario === PROP_COMPARTIDOS) return { propietario: { contains: " y ", mode: "insensitive" } };
-  if (propietario === PROP_INDIVIDUAL) {
-    return {
-      AND: [{ propietario: { not: null } }, { propietario: { not: "" } }, { NOT: { propietario: { contains: " y " } } }],
-    };
-  }
-  return { propietario };
 }
 
 function StatCard({ label, value, variant = "default" }: { label: string; value: string; variant?: "default" | "success" | "danger" }) {
@@ -78,7 +62,7 @@ export default async function CostosIndexPage({ searchParams }: { searchParams: 
     ...(sp.estado ? { estado: sp.estado as EstadoVehiculo } : {}),
     ...(sp.marca ? { marca: sp.marca } : {}),
     ...(sp.modelo ? { modelo: sp.modelo } : {}),
-    ...propietarioWhere(sp.propietario),
+    ...(sp.propietario ? { propietario: sp.propietario } : {}),
     ...(sp.q
       ? {
           OR: [
@@ -90,7 +74,7 @@ export default async function CostosIndexPage({ searchParams }: { searchParams: 
       : {}),
   };
 
-  const [vehiculos, config, marcasRows, modelosRows, propietariosRows] = await Promise.all([
+  const [vehiculos, config, marcasRows, modelosRows] = await Promise.all([
     db.vehiculo.findMany({
       where,
       include: { costeo: { include: { gastos: true } } },
@@ -99,18 +83,11 @@ export default async function CostosIndexPage({ searchParams }: { searchParams: 
     db.configuracion.findUnique({ where: { id: 1 } }),
     db.vehiculo.findMany({ where: { esVehiculo: true, archivedAt: null }, distinct: ["marca"], select: { marca: true }, orderBy: { marca: "asc" } }),
     db.vehiculo.findMany({ where: { esVehiculo: true, archivedAt: null }, distinct: ["modelo"], select: { modelo: true }, orderBy: { modelo: "asc" } }),
-    db.vehiculo.findMany({
-      where: { esVehiculo: true, archivedAt: null, propietario: { not: null } },
-      distinct: ["propietario"],
-      select: { propietario: true },
-      orderBy: { propietario: "asc" },
-    }),
   ]);
   const configRateMicros = config?.tipoCambioGlobalMicros ?? 400000;
 
   const marcas = marcasRows.map((m) => m.marca);
   const modelos = modelosRows.map((m) => m.modelo);
-  const propietarios = propietariosRows.map((p) => p.propietario).filter((p): p is string => Boolean(p));
 
   const computados = vehiculos.map((v) =>
     v.costeo
@@ -188,9 +165,7 @@ export default async function CostosIndexPage({ searchParams }: { searchParams: 
           className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
         >
           <option value="">Propietario: todos</option>
-          <option value={PROP_COMPARTIDOS}>Compartidos (2 dueños)</option>
-          <option value={PROP_INDIVIDUAL}>De un solo dueño</option>
-          {propietarios.map((p) => (
+          {PROPIETARIO_OPTIONS.map((p) => (
             <option key={p} value={p}>
               {p}
             </option>
