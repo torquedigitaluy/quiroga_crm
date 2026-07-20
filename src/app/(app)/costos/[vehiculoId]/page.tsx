@@ -9,7 +9,7 @@ import { CosteoSummary } from "@/components/costos/CosteoSummary";
 import { PatenteCard } from "@/components/costos/PatenteCard";
 import { GastoLineTable } from "@/components/costos/GastoLineTable";
 import { computeCosteo } from "@/lib/costeo";
-import { upsertCosteo, addGasto, deleteGasto } from "./actions";
+import { upsertCosteo, addGasto, deleteGasto, toggleNoSumarPatente } from "./actions";
 
 export default async function CosteoVehiculoPage({ params }: { params: Promise<{ vehiculoId: string }> }) {
   const currentUser = await requireUser();
@@ -49,6 +49,7 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
   const boundUpsert = upsertCosteo.bind(null, vehiculoId);
   const boundAdd = addGasto.bind(null, vehiculoId);
   const boundDelete = deleteGasto.bind(null, vehiculoId);
+  const boundToggleNoSumarPatente = toggleNoSumarPatente.bind(null, vehiculoId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,7 +77,10 @@ export default async function CosteoVehiculoPage({ params }: { params: Promise<{
       <PatenteCard
         patenteAnualCents={vehiculo.patenteAnualCents}
         patenteCuotaCents={vehiculo.patenteCuotaCents}
+        patenteNoSumar={vehiculo.patenteNoSumar}
         fechaVenta={costeo.fechaVenta}
+        editable={editable}
+        onToggleNoSumar={boundToggleNoSumarPatente}
       />
 
       <div>

@@ -81,6 +81,20 @@ export async function addGasto(vehiculoId: string, formData: FormData) {
   revalidatePath(`/costos/${vehiculoId}`);
 }
 
+export async function toggleNoSumarPatente(vehiculoId: string, noSumar: boolean) {
+  await assertPuedeEditarCostos(vehiculoId);
+  await db.vehiculo.update({ where: { id: vehiculoId }, data: { patenteNoSumar: noSumar } });
+  await logAudit({
+    accion: "EDITAR",
+    entidad: "Vehículo",
+    entidadId: vehiculoId,
+    descripcion: noSumar
+      ? "Marcó la patente para que no se siga sumando automáticamente"
+      : "Volvió a activar la suma automática de patente",
+  });
+  revalidatePath(`/costos/${vehiculoId}`);
+}
+
 export async function deleteGasto(vehiculoId: string, gastoId: string) {
   await assertPuedeEditarCostos(vehiculoId);
   const gasto = await db.gastoLine.findUnique({ where: { id: gastoId } });

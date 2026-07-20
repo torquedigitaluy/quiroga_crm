@@ -34,6 +34,13 @@ export function GastoLineTable({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // La moneda se maneja como estado controlado: el Select de Radix no es un
+  // <select> nativo real, y llamar a form.reset() después de agregar un
+  // gasto desincronizaba lo que se veía elegido del valor que en verdad
+  // viajaba al servidor (a veces quedaba mostrando UYU pero mandaba USD, o
+  // al revés). Con estado controlado el valor mostrado y el enviado son
+  // siempre el mismo.
+  const [moneda, setMoneda] = useState<"USD" | "UYU">("USD");
   const router = useRouter();
 
   const handleAdd = (formData: FormData) => {
@@ -44,6 +51,7 @@ export function GastoLineTable({
         router.refresh();
         const form = document.getElementById("gasto-add-form") as HTMLFormElement | null;
         form?.reset();
+        setMoneda("USD");
       } catch (e) {
         rethrowIfNextControlFlow(e);
         setError(e instanceof Error ? e.message : "Error al agregar el gasto");
@@ -99,7 +107,8 @@ export function GastoLineTable({
           </div>
           <div className="flex w-28 flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">Moneda</label>
-            <Select name="moneda" defaultValue="USD">
+            <input type="hidden" name="moneda" value={moneda} />
+            <Select value={moneda} onValueChange={(v) => setMoneda(v as "USD" | "UYU")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

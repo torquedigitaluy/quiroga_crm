@@ -54,7 +54,7 @@ export default async function CostosIndexPage() {
       </div>
 
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-10 shadow-sm">
           <TableRow>
             <TableHead>Vehículo</TableHead>
             <TableHead>Estado</TableHead>

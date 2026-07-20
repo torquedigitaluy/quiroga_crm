@@ -304,6 +304,9 @@ model Vehiculo {
   chasis              String?
   patenteCuotaCents   Int?
   patenteAnualCents   Int?
+  // Si está en true, se corta el cálculo automático de cuotas de patente por
+  // calendario (p.ej. porque ya se pagó el año completo de una vez).
+  patenteNoSumar      Boolean        @default(false)
   propietario         String?
   tipoPropiedad       TipoPropiedad  @default(PROPIA)
   segundaLlave        Boolean        @default(false)
