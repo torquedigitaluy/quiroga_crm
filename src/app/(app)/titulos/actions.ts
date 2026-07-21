@@ -21,6 +21,7 @@ export async function createFinanciacionTitulo(formData: FormData) {
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
     vehiculoExterno: String(formData.get("vehiculoExterno") ?? ""),
+    matricula: String(formData.get("matricula") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
     clienteApellido: String(formData.get("clienteApellido") ?? ""),
     clienteCi: String(formData.get("clienteCi") ?? ""),
@@ -48,6 +49,7 @@ export async function createFinanciacionTitulo(formData: FormData) {
     data: {
       vehiculoId: data.vehiculoId || null,
       vehiculoExterno: data.vehiculoId ? null : data.vehiculoExterno || null,
+      matricula: data.matricula || null,
       clienteId: cliente.id,
       contacto: data.contacto || null,
       fechaVenta: dateOrNull(formData.get("fechaVenta")),

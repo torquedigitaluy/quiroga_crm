@@ -474,6 +474,11 @@ model EscribaniaTramite {
   vehiculoId          String?
   vehiculo            Vehiculo?        @relation(fields: [vehiculoId], references: [id])
   vehiculoExterno     String?
+  // Matrícula propia del trámite: si el vehículo es de stock se autocompleta
+  // desde ahí, pero queda editable; si es externo se carga a mano. Así la
+  // columna Matrícula del listado nunca depende de que exista un vehículo
+  // de stock vinculado.
+  matricula           String?
   clienteId           String?
   cliente             Cliente?         @relation(fields: [clienteId], references: [id])
   fecha               DateTime?
@@ -502,6 +507,7 @@ model FinanciacionTitulo {
   vehiculoId           String?
   vehiculo             Vehiculo? @relation(fields: [vehiculoId], references: [id])
   vehiculoExterno      String?
+  matricula            String?
   clienteId            String?
   cliente              Cliente?  @relation(fields: [clienteId], references: [id])
   contacto             String?

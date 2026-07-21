@@ -42,6 +42,7 @@ export default async function EditarTramitePage({ params }: { params: Promise<{ 
                 {
                   id: tramite.vehiculo.id,
                   label: `${tramite.vehiculo.marca} ${tramite.vehiculo.modelo}${tramite.vehiculo.matricula ? ` — ${tramite.vehiculo.matricula}` : ""}`,
+                  matricula: tramite.vehiculo.matricula,
                 },
               ]
             : []
@@ -50,6 +51,7 @@ export default async function EditarTramitePage({ params }: { params: Promise<{ 
           id: tramite.id,
           vehiculoId: tramite.vehiculoId ?? undefined,
           vehiculoExterno: tramite.vehiculoExterno,
+          matricula: tramite.matricula,
           clienteNombre: tramite.cliente?.nombre ?? "",
           clienteApellido: tramite.cliente?.apellido ?? "",
           clienteCi: tramite.cliente?.ci ?? "",

@@ -20,6 +20,7 @@ export default async function NuevoTramitePage() {
         vehiculos={vehiculos.map((v) => ({
           id: v.id,
           label: `${v.marca} ${v.modelo}${v.matricula ? ` — ${v.matricula}` : ""}`,
+          matricula: v.matricula,
         }))}
         action={createTramite}
       />

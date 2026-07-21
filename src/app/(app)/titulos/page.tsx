@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { costoTitulosEfectivoCents } from "@/lib/titulos";
 import { vehiculoLabel } from "@/lib/vehiculoLabel";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Can } from "@/components/auth/Can";
@@ -20,16 +22,28 @@ const FORMA_PAGO_LABELS: Record<string, string> = { CONTADO: "Contado", FINANCIA
 export default async function TitulosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archivadas?: string }>;
+  searchParams: Promise<{ archivadas?: string; matricula?: string }>;
 }) {
   await assertCan("titulos.view");
   const editable = await can("titulos.edit");
-  const { archivadas } = await searchParams;
+  const { archivadas, matricula } = await searchParams;
   const verArchivadas = archivadas === "1";
+
+  const where: Prisma.FinanciacionTituloWhereInput = {
+    archivedAt: verArchivadas ? { not: null } : null,
+    ...(matricula
+      ? {
+          OR: [
+            { matricula: { contains: matricula, mode: "insensitive" } },
+            { vehiculo: { matricula: { contains: matricula, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
 
   const [financiaciones, config] = await Promise.all([
     db.financiacionTitulo.findMany({
-      where: { archivedAt: verArchivadas ? { not: null } : null },
+      where,
       include: { vehiculo: true, cliente: true, entregas: true },
       orderBy: { fechaVenta: "desc" },
     }),
@@ -69,6 +83,22 @@ export default async function TitulosPage({
 
       <SeccionTabs active="titulos" />
 
+      <form className="flex flex-wrap items-end gap-2">
+        {archivadas && <input type="hidden" name="archivadas" value={archivadas} />}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-muted-foreground">Matrícula</label>
+          <Input name="matricula" placeholder="Ej: ABC 1234" defaultValue={matricula ?? ""} className="w-48" />
+        </div>
+        <Button type="submit" variant="outline">
+          Filtrar
+        </Button>
+        {matricula && (
+          <Button variant="ghost" asChild>
+            <Link href={verArchivadas ? "/titulos?archivadas=1" : "/titulos"}>Limpiar</Link>
+          </Button>
+        )}
+      </form>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -95,7 +125,7 @@ export default async function TitulosPage({
               const pagadoCents = f.entregas.reduce((sum, e) => sum + e.montoCents, 0);
               const saldo = costoEfectivo - pagadoCents;
               const clienteNombre = f.cliente ? `${f.cliente.nombre} ${f.cliente.apellido ?? ""}`.trim() : "";
-              const mensaje = `Hola ${clienteNombre}, te escribimos de Quiroga Automóviles por el trámite de títulos de tu ${vehiculoLabel(f.vehiculo, f.vehiculoExterno)} (${f.vehiculo?.matricula ?? "s/matrícula"}). Tenés un saldo pendiente de ${formatCents(saldo, f.costoMoneda)}. ¿Podemos coordinar el pago?`;
+              const mensaje = `Hola ${clienteNombre}, te escribimos de Quiroga Automóviles por el trámite de títulos de tu ${vehiculoLabel(f.vehiculo, f.vehiculoExterno)} (${f.matricula ?? f.vehiculo?.matricula ?? "s/matrícula"}). Tenés un saldo pendiente de ${formatCents(saldo, f.costoMoneda)}. ¿Podemos coordinar el pago?`;
               return (
                 <TableRow key={f.id}>
                   <TableCell>
@@ -107,7 +137,7 @@ export default async function TitulosPage({
                       </Link>
                     )}
                   </TableCell>
-                  <TableCell>{f.vehiculo?.matricula ?? "—"}</TableCell>
+                  <TableCell>{f.matricula ?? f.vehiculo?.matricula ?? "—"}</TableCell>
                   <TableCell>{f.cliente ? `${f.cliente.nombre} ${f.cliente.apellido ?? ""}` : "—"}</TableCell>
                   <TableCell>{f.fechaVenta ? new Date(f.fechaVenta).toLocaleDateString("es-UY") : "—"}</TableCell>
                   <TableCell>

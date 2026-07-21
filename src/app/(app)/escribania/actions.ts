@@ -19,6 +19,7 @@ function parseTramite(formData: FormData) {
   const raw = {
     vehiculoId: String(formData.get("vehiculoId") ?? ""),
     vehiculoExterno: String(formData.get("vehiculoExterno") ?? ""),
+    matricula: String(formData.get("matricula") ?? ""),
     clienteNombre: String(formData.get("clienteNombre") ?? ""),
     clienteApellido: String(formData.get("clienteApellido") ?? ""),
     clienteCi: String(formData.get("clienteCi") ?? ""),
@@ -43,6 +44,7 @@ function parseTramite(formData: FormData) {
 /** Campos de la fila EscribaniaTramite tomados del formulario (sin el cliente). */
 function tramiteData(data: ReturnType<typeof parseTramite>, formData: FormData) {
   return {
+    matricula: data.matricula || null,
     fecha: dateOrNull(formData.get("fecha")),
     tipoDoc: data.tipoDoc,
     titulosCon: data.titulosCon,

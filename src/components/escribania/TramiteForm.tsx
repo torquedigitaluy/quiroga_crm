@@ -19,6 +19,7 @@ export type TramiteInitial = {
   id?: string;
   vehiculoId?: string;
   vehiculoExterno?: string | null;
+  matricula?: string | null;
   clienteNombre?: string;
   clienteApellido?: string;
   clienteCi?: string;
@@ -44,7 +45,7 @@ export function TramiteForm({
   initial,
   submitLabel,
 }: {
-  vehiculos: { id: string; label: string }[];
+  vehiculos: { id: string; label: string; matricula?: string | null }[];
   action: (formData: FormData) => Promise<void>;
   initial?: TramiteInitial;
   submitLabel?: string;
@@ -57,7 +58,14 @@ export function TramiteForm({
   );
   const [vehiculoId, setVehiculoId] = useState<string>(initial?.vehiculoId ?? "");
   const [vehiculoExterno, setVehiculoExterno] = useState<string>(initial?.vehiculoExterno ?? "");
+  const [matricula, setMatricula] = useState<string>(initial?.matricula ?? "");
   const router = useRouter();
+
+  const handleSelectVehiculo = (id: string) => {
+    setVehiculoId(id);
+    const v = vehiculos.find((x) => x.id === id);
+    setMatricula(v?.matricula ?? "");
+  };
 
   const handleSubmit = (formData: FormData) => {
     setError(null);
@@ -98,7 +106,7 @@ export function TramiteForm({
                 </Button>
               </div>
               {origen === "stock" ? (
-                <Select name="vehiculoId" value={vehiculoId || undefined} onValueChange={setVehiculoId}>
+                <Select name="vehiculoId" value={vehiculoId || undefined} onValueChange={handleSelectVehiculo}>
                   <SelectTrigger>
                     <SelectValue placeholder="Elegí un vehículo" />
                   </SelectTrigger>
@@ -113,12 +121,25 @@ export function TramiteForm({
               ) : (
                 <Input
                   name="vehiculoExterno"
-                  placeholder="Ej: Toyota Corolla 2015, matrícula ABC 1234"
+                  placeholder="Ej: Toyota Corolla 2015"
                   value={vehiculoExterno}
                   onChange={(e) => setVehiculoExterno(e.target.value)}
                 />
               )}
             </>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label>Matrícula</Label>
+          <Input
+            name="matricula"
+            placeholder="Ej: ABC 1234"
+            value={matricula}
+            onChange={(e) => setMatricula(e.target.value)}
+          />
+          {origen === "stock" && (
+            <p className="text-xs text-muted-foreground">Se completa sola al elegir el vehículo del stock, pero se puede corregir.</p>
           )}
         </div>
 

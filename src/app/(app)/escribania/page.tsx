@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Plus, Pencil } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assertCan, can } from "@/lib/permissions/engine";
 import { formatCents } from "@/lib/money";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Can } from "@/components/auth/Can";
@@ -22,15 +24,27 @@ import {
 export default async function EscribaniaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archivadas?: string }>;
+  searchParams: Promise<{ archivadas?: string; matricula?: string }>;
 }) {
   await assertCan("escribania.view");
   const editable = await can("escribania.edit");
-  const { archivadas } = await searchParams;
+  const { archivadas, matricula } = await searchParams;
   const verArchivadas = archivadas === "1";
 
+  const where: Prisma.EscribaniaTramiteWhereInput = {
+    archivedAt: verArchivadas ? { not: null } : null,
+    ...(matricula
+      ? {
+          OR: [
+            { matricula: { contains: matricula, mode: "insensitive" } },
+            { vehiculo: { matricula: { contains: matricula, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+
   const tramites = await db.escribaniaTramite.findMany({
-    where: { archivedAt: verArchivadas ? { not: null } : null },
+    where,
     include: { vehiculo: true, cliente: true },
     orderBy: { fecha: "desc" },
   });
@@ -69,6 +83,22 @@ export default async function EscribaniaPage({
 
       <SeccionTabs active="escribania" />
 
+      <form className="flex flex-wrap items-end gap-2">
+        {archivadas && <input type="hidden" name="archivadas" value={archivadas} />}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-muted-foreground">Matrícula</label>
+          <Input name="matricula" placeholder="Ej: ABC 1234" defaultValue={matricula ?? ""} className="w-48" />
+        </div>
+        <Button type="submit" variant="outline">
+          Filtrar
+        </Button>
+        {matricula && (
+          <Button variant="ghost" asChild>
+            <Link href={verArchivadas ? "/escribania?archivadas=1" : "/escribania"}>Limpiar</Link>
+          </Button>
+        )}
+      </form>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -95,7 +125,7 @@ export default async function EscribaniaPage({
                 <TableCell className="font-medium text-foreground">
                   {vehiculoLabel(t.vehiculo, t.vehiculoExterno)}
                 </TableCell>
-                <TableCell>{t.vehiculo?.matricula ?? "—"}</TableCell>
+                <TableCell>{t.matricula ?? t.vehiculo?.matricula ?? "—"}</TableCell>
                 <TableCell>{TITULOS_CON_LABELS[t.titulosCon]}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{TIPO_DOC_LABELS[t.tipoDoc]}</Badge>

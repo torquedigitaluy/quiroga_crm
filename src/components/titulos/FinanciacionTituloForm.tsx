@@ -12,12 +12,20 @@ export function FinanciacionTituloForm({
   vehiculos,
   action,
 }: {
-  vehiculos: { id: string; label: string }[];
+  vehiculos: { id: string; label: string; matricula?: string | null }[];
   action: (formData: FormData) => Promise<void>;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [origen, setOrigen] = useState<"stock" | "externo">("stock");
+  const [vehiculoId, setVehiculoId] = useState("");
+  const [matricula, setMatricula] = useState("");
+
+  const handleSelectVehiculo = (id: string) => {
+    setVehiculoId(id);
+    const v = vehiculos.find((x) => x.id === id);
+    setMatricula(v?.matricula ?? "");
+  };
 
   const handleSubmit = (formData: FormData) => {
     setError(null);
@@ -45,7 +53,7 @@ export function FinanciacionTituloForm({
             </Button>
           </div>
           {origen === "stock" ? (
-            <Select name="vehiculoId">
+            <Select name="vehiculoId" value={vehiculoId || undefined} onValueChange={handleSelectVehiculo}>
               <SelectTrigger>
                 <SelectValue placeholder="Elegí un vehículo" />
               </SelectTrigger>
@@ -58,7 +66,14 @@ export function FinanciacionTituloForm({
               </SelectContent>
             </Select>
           ) : (
-            <Input name="vehiculoExterno" placeholder="Ej: Toyota Corolla 2015, matrícula ABC 1234" />
+            <Input name="vehiculoExterno" placeholder="Ej: Toyota Corolla 2015" />
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Matrícula</Label>
+          <Input name="matricula" placeholder="Ej: ABC 1234" value={matricula} onChange={(e) => setMatricula(e.target.value)} />
+          {origen === "stock" && (
+            <p className="text-xs text-muted-foreground">Se completa sola al elegir el vehículo del stock, pero se puede corregir.</p>
           )}
         </div>
         <div className="flex flex-col gap-1.5">

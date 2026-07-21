@@ -4,6 +4,7 @@ export const financiacionTituloSchema = z
   .object({
     vehiculoId: z.string().trim().optional(),
     vehiculoExterno: z.string().trim().optional(),
+    matricula: z.string().trim().optional().nullable(),
     clienteNombre: z.string().trim().min(1, "El nombre del cliente es obligatorio"),
     clienteApellido: z.string().trim().optional(),
     clienteCi: z.string().trim().optional(),
