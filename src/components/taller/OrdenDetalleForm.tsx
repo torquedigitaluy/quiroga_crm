@@ -32,6 +32,7 @@ export type OrdenDetalleData = {
   trabajosRealizados: string | null;
   observaciones: string | null;
   manoDeObraCents: number;
+  costoServicioCents: number;
   vehMarca: string | null;
   vehModelo: string | null;
   vehVersion: string | null;
@@ -40,6 +41,7 @@ export type OrdenDetalleData = {
   vehMatricula: string | null;
   vehKm: number | null;
   vehChasis: string | null;
+  vehCombustible: string | null;
   clienteNombre: string | null;
   clienteTelefono: string | null;
   clienteDireccion: string | null;
@@ -166,6 +168,12 @@ export function OrdenDetalleForm({
           </div>
         </div>
 
+        <div className="flex flex-col gap-1.5 sm:w-64">
+          <Label>Costo de servicio ($, uso interno)</Label>
+          <Input name="costoServicioCents" type="number" step="0.01" defaultValue={centsToUnits(initial.costoServicioCents)} />
+          <p className="text-xs text-muted-foreground">No se imprime en el PDF entregado al cliente.</p>
+        </div>
+
         <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-4">
           <legend className="px-1 text-sm font-semibold text-foreground">Datos del vehículo</legend>
           <div className="flex flex-col gap-1.5">
@@ -199,6 +207,10 @@ export function OrdenDetalleForm({
           <div className="flex flex-col gap-1.5">
             <Label>N° de Chasis</Label>
             <Input name="vehChasis" defaultValue={initial.vehChasis ?? ""} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Combustible</Label>
+            <Input name="vehCombustible" defaultValue={initial.vehCombustible ?? ""} />
           </div>
         </fieldset>
 

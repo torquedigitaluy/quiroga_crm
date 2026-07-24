@@ -41,11 +41,12 @@ const PRIORIDAD_VARIANT: Record<string, "neutral" | "default" | "warning" | "dan
 };
 
 export default async function OrdenTallerDetallePage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await assertCanAny(["taller.view", "taller.view_ordenes"]);
+  const user = await assertCanAny(["taller.view", "taller.view_ordenes", "taller.edit_ordenes"]);
   const { id } = await params;
   const perms = await getEffectivePermissions(user.id);
-  const editable = perms.has("taller.edit");
-  const soloLectura = !perms.has("taller.view") && perms.has("taller.view_ordenes");
+  const fullAccess = perms.has("taller.view");
+  const editable = fullAccess || perms.has("taller.edit_ordenes");
+  const soloLectura = !fullAccess && !editable;
   const puedeRevisar = perms.has("taller.control_calidad");
 
   const [orden, tecnicos, historial] = await Promise.all([
@@ -156,6 +157,7 @@ export default async function OrdenTallerDetallePage({ params }: { params: Promi
             trabajosRealizados: orden.trabajosRealizados,
             observaciones: orden.observaciones,
             manoDeObraCents: soloLectura ? 0 : orden.manoDeObraCents,
+            costoServicioCents: soloLectura ? 0 : orden.costoServicioCents,
             vehMarca: orden.vehMarca,
             vehModelo: orden.vehModelo,
             vehVersion: orden.vehVersion,
@@ -164,6 +166,7 @@ export default async function OrdenTallerDetallePage({ params }: { params: Promi
             vehMatricula: orden.vehMatricula,
             vehKm: orden.vehKm,
             vehChasis: orden.vehChasis,
+            vehCombustible: orden.vehCombustible,
             clienteNombre: orden.clienteNombre,
             clienteTelefono: orden.clienteTelefono,
             clienteDireccion: orden.clienteDireccion,

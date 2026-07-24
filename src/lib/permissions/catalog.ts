@@ -74,10 +74,15 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "clientes.view", label: "Ver buscador de clientes", grupo: "Clientes" },
 
   // Taller
-  { key: "taller.view", label: "Ver taller (gastos y órdenes de trabajo)", grupo: "Taller" },
+  { key: "taller.view", label: "Ver taller (caja de gastos y órdenes de trabajo)", grupo: "Taller" },
   { key: "taller.edit", label: "Cargar gastos y órdenes de trabajo de taller", grupo: "Taller" },
   { key: "taller.view_ordenes", label: "Ver solo el estado y observaciones de las órdenes (sin costos)", grupo: "Taller" },
+  { key: "taller.edit_ordenes", label: "Crear y editar órdenes de trabajo (sin ver la caja de gastos de taller)", grupo: "Taller" },
   { key: "taller.control_calidad", label: "Completar el control de calidad de una orden", grupo: "Taller" },
+
+  // Presupuestos
+  { key: "presupuestos.view", label: "Ver presupuestos", grupo: "Presupuestos" },
+  { key: "presupuestos.edit", label: "Crear y editar presupuestos", grupo: "Presupuestos" },
 
   // Dashboard
   { key: "dashboard.view", label: "Ver panel principal", grupo: "Dashboard" },
@@ -118,7 +123,9 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "ventas.view_own",
     "ventas.create",
     "ventas.edit_own",
-    "taller.view_ordenes",
+    "taller.edit_ordenes",
+    "presupuestos.view",
+    "presupuestos.edit",
     "docs.generate",
   ],
   CONTADORA: [
@@ -164,12 +171,16 @@ export const ROLE_PERMISSIONS: Record<RoleKey, string[]> = {
     "taller.view",
     "taller.edit",
     "taller.control_calidad",
+    "presupuestos.view",
+    "presupuestos.edit",
   ],
   TALLER: [
     "dashboard.view",
     "stock.view",
     "taller.view",
     "taller.edit",
+    "presupuestos.view",
+    "presupuestos.edit",
   ],
   COSTOS_VEHICULOS: [
     "dashboard.view",

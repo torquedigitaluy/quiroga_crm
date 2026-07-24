@@ -4,10 +4,14 @@ import { cn } from "@/lib/utils";
 function Table({
   className,
   containerClassName,
+  containerRef,
   ...props
-}: React.HTMLAttributes<HTMLTableElement> & { containerClassName?: string }) {
+}: React.HTMLAttributes<HTMLTableElement> & {
+  containerClassName?: string;
+  containerRef?: React.Ref<HTMLDivElement>;
+}) {
   return (
-    <div className={cn("w-full overflow-x-auto rounded-lg border border-border", containerClassName)}>
+    <div ref={containerRef} className={cn("w-full overflow-x-auto rounded-lg border border-border", containerClassName)}>
       <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );

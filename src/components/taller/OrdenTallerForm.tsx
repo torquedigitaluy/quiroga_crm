@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ClienteAutocomplete } from "./ClienteAutocomplete";
+import { buscarClientesTallerAction } from "@/app/(app)/taller/actions";
+import type { CandidatoClienteTaller } from "@/lib/clienteTaller";
 
 export type VehiculoStockOption = {
   id: string;
@@ -43,9 +46,11 @@ export function OrdenTallerForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [tiposSeleccionados, setTiposSeleccionados] = useState<string[]>(["MANTENIMIENTO"]);
-  const EMPTY_VEH = { marca: "", modelo: "", version: "", anio: "", color: "", matricula: "", km: "" };
+  const EMPTY_VEH = { marca: "", modelo: "", version: "", anio: "", color: "", matricula: "", km: "", combustible: "" };
   const [vehDatos, setVehDatos] = useState(EMPTY_VEH);
   const [vehiculoId, setVehiculoId] = useState("");
+  const [vehiculoExterno, setVehiculoExterno] = useState("");
+  const [clienteDatos, setClienteDatos] = useState({ nombre: "", telefono: "", direccion: "" });
 
   // Al cambiar de origen se limpian los datos autocargados. Especialmente al
   // pasar a "Vehículo externo": no deben quedar precargados datos de un auto de
@@ -54,6 +59,7 @@ export function OrdenTallerForm({
     setOrigen(nuevo);
     setVehDatos(EMPTY_VEH);
     setVehiculoId("");
+    setVehiculoExterno("");
   };
 
   const handleSelectVehiculo = (id: string) => {
@@ -68,8 +74,34 @@ export function OrdenTallerForm({
         color: v.color ?? "",
         matricula: v.matricula ?? "",
         km: v.km != null ? String(v.km) : "",
+        combustible: "",
       });
     }
+  };
+
+  const handleSelectCliente = (c: CandidatoClienteTaller) => {
+    setClienteDatos({
+      nombre: c.clienteNombre,
+      telefono: c.clienteTelefono ?? "",
+      direccion: c.clienteDireccion ?? "",
+    });
+    if (c.vehiculoId && vehiculos.some((v) => v.id === c.vehiculoId)) {
+      handleOrigenChange("stock");
+      handleSelectVehiculo(c.vehiculoId);
+      return;
+    }
+    handleOrigenChange("externo");
+    setVehDatos({
+      marca: c.vehMarca ?? "",
+      modelo: c.vehModelo ?? "",
+      version: c.vehVersion ?? "",
+      anio: c.vehAnio != null ? String(c.vehAnio) : "",
+      color: c.vehColor ?? "",
+      matricula: c.vehMatricula ?? "",
+      km: c.vehKm != null ? String(c.vehKm) : "",
+      combustible: c.vehCombustible ?? "",
+    });
+    setVehiculoExterno([c.vehMarca, c.vehModelo, c.vehMatricula].filter(Boolean).join(" ") || c.clienteNombre);
   };
 
   const toggleTipo = (value: string) => {
@@ -90,6 +122,8 @@ export function OrdenTallerForm({
 
   return (
     <form action={handleSubmit} className="flex flex-col gap-6">
+      <ClienteAutocomplete buscarAction={buscarClientesTallerAction} onSelect={handleSelectCliente} />
+
       <div className="flex flex-col gap-1.5">
         <Label>Vehículo</Label>
         <input type="hidden" name="origenVehiculo" value={origen} />
@@ -122,7 +156,12 @@ export function OrdenTallerForm({
       ) : (
         <div className="flex flex-col gap-1.5">
           <Label>Identificación del vehículo externo</Label>
-          <Input name="vehiculoExterno" placeholder="Ej: Toyota Corolla 2015, cliente Juan Pérez" />
+          <Input
+            name="vehiculoExterno"
+            placeholder="Ej: Toyota Corolla 2015, cliente Juan Pérez"
+            value={vehiculoExterno}
+            onChange={(e) => setVehiculoExterno(e.target.value)}
+          />
         </div>
       )}
 
@@ -164,21 +203,41 @@ export function OrdenTallerForm({
           <Label>N° de Chasis</Label>
           <Input name="vehChasis" />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Combustible</Label>
+          <Input
+            name="vehCombustible"
+            value={vehDatos.combustible}
+            onChange={(e) => setVehDatos({ ...vehDatos, combustible: e.target.value })}
+          />
+        </div>
       </fieldset>
 
       <fieldset className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
         <legend className="px-1 text-sm font-semibold text-foreground">Datos del cliente</legend>
         <div className="flex flex-col gap-1.5">
           <Label>Cliente</Label>
-          <Input name="clienteNombre" />
+          <Input
+            name="clienteNombre"
+            value={clienteDatos.nombre}
+            onChange={(e) => setClienteDatos({ ...clienteDatos, nombre: e.target.value })}
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Teléfono</Label>
-          <Input name="clienteTelefono" />
+          <Input
+            name="clienteTelefono"
+            value={clienteDatos.telefono}
+            onChange={(e) => setClienteDatos({ ...clienteDatos, telefono: e.target.value })}
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Dirección</Label>
-          <Input name="clienteDireccion" />
+          <Input
+            name="clienteDireccion"
+            value={clienteDatos.direccion}
+            onChange={(e) => setClienteDatos({ ...clienteDatos, direccion: e.target.value })}
+          />
         </div>
       </fieldset>
 

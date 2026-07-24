@@ -201,6 +201,7 @@ model User {
   ordenesCreadas       OrdenTaller[]        @relation("CreadorOrden")
   promesasCreadas      PromesaCompraventa[] @relation("CreadorPromesa")
   valesCreados         Vale[]               @relation("CreadorVale")
+  presupuestosCreados  Presupuesto[]
 }
 
 model PasswordResetToken {
@@ -336,6 +337,7 @@ model Vehiculo {
   deudasCliente        DeudaCliente[]
   ordenesTaller        OrdenTaller[]
   promesas             PromesaCompraventa[]
+  presupuestos         Presupuesto[]
 
   @@index([matricula])
   @@index([marca])
@@ -362,6 +364,8 @@ model Cliente {
   deudas               DeudaCliente[]
   promesas             PromesaCompraventa[]
   vales                Vale[]
+  ordenesTaller        OrdenTaller[]
+  presupuestos         Presupuesto[]
 
   @@index([nombre])
   @@index([ci])
@@ -918,6 +922,9 @@ model OrdenTaller {
   vehMatricula       String?
   vehKm              Int?
   vehChasis          String?
+  vehCombustible     String?
+  clienteId          String?
+  cliente            Cliente?           @relation(fields: [clienteId], references: [id])
   clienteNombre      String?
   clienteTelefono    String?
   clienteDireccion   String?
@@ -930,6 +937,8 @@ model OrdenTaller {
   trabajosRealizados String?
   observaciones      String?
   manoDeObraCents    Int                @default(0)
+  // Costo interno del servicio para la automotora — nunca se imprime en el PDF entregado al cliente.
+  costoServicioCents Int                @default(0)
   responsable        String?
   tecnicoResponsableId     String?
   tecnicoResponsable       User?      @relation("TecnicoResponsableOrden", fields: [tecnicoResponsableId], references: [id])
@@ -953,6 +962,7 @@ model OrdenTaller {
   imagenes  OrdenTallerImagen[]
 
   @@index([estado])
+  @@index([clienteId])
 }
 
 model OrdenTallerRepuesto {
@@ -993,6 +1003,71 @@ model OrdenTallerImagen {
   categoria     CategoriaImagenOrden  @default(OTRA)
   dataUrl       String
   createdAt     DateTime              @default(now())
+}
+
+// ---------- Presupuestos ----------
+
+// Catálogo de aceites con precio precargado, editable desde el sistema.
+model AceitePredefinido {
+  id         String   @id @default(cuid())
+  nombre     String
+  precioCents Int     @default(0)
+  moneda     Moneda   @default(UYU)
+  activo     Boolean  @default(true)
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Presupuesto {
+  id               String    @id @default(cuid())
+  numero           Int       @unique @default(autoincrement())
+  vehiculoId       String?
+  vehiculo         Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  vehiculoExterno  String?
+  vehMarca         String?
+  vehModelo        String?
+  vehMatricula     String?
+  vehCombustible   String?
+  clienteId        String?
+  cliente          Cliente?  @relation(fields: [clienteId], references: [id])
+  clienteNombre    String?
+  clienteTelefono  String?
+  fecha            DateTime  @default(now())
+  comentarios      String?
+  creadoPorId      String?
+  creadoPor        User?     @relation(fields: [creadoPorId], references: [id])
+  archivedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  aceites   PresupuestoAceite[]
+  articulos PresupuestoArticulo[]
+
+  @@index([clienteId])
+  @@index([vehiculoId])
+}
+
+model PresupuestoAceite {
+  id            String      @id @default(cuid())
+  presupuestoId String
+  presupuesto   Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  nombre        String
+  precioCents   Int         @default(0)
+  moneda        Moneda      @default(UYU)
+  cantidad      Int         @default(1)
+  createdAt     DateTime    @default(now())
+}
+
+model PresupuestoArticulo {
+  id            String      @id @default(cuid())
+  presupuestoId String
+  presupuesto   Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  nombre        String
+  precioCents   Int         @default(0)
+  moneda        Moneda      @default(UYU)
+  cantidad      Int         @default(1)
+  createdAt     DateTime    @default(now())
 }
 
 // ---------- Auditoría ----------

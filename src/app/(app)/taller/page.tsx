@@ -13,15 +13,17 @@ import { RestoreButton } from "@/components/ui/RestoreButton";
 import { createGastoTaller, restoreOrdenTaller } from "./actions";
 
 export default async function TallerPage({ searchParams }: { searchParams: Promise<{ archivadas?: string }> }) {
-  const user = await assertCanAny(["taller.view", "taller.view_ordenes"]);
+  const user = await assertCanAny(["taller.view", "taller.view_ordenes", "taller.edit_ordenes"]);
   const perms = await getEffectivePermissions(user.id);
-  const editable = perms.has("taller.edit");
-  const soloLectura = !perms.has("taller.view") && perms.has("taller.view_ordenes");
+  const fullAccess = perms.has("taller.view");
+  const puedeEditarCaja = perms.has("taller.edit");
+  const puedeEditarOrdenes = puedeEditarCaja || perms.has("taller.edit_ordenes");
+  const soloLectura = !fullAccess && !puedeEditarOrdenes;
   const { archivadas } = await searchParams;
   const verArchivadas = archivadas === "1" && !soloLectura;
 
   const [cuenta, ordenes] = await Promise.all([
-    soloLectura
+    !fullAccess
       ? Promise.resolve(null)
       : db.cuentaBancaria.findUnique({
           where: { nombre: "GASTOS_TALLER" },
@@ -54,14 +56,14 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
           {verArchivadas ? "Órdenes de trabajo eliminadas" : "Órdenes de trabajo"}
         </h2>
         <div className="flex items-center gap-2">
-          {editable && !soloLectura && (
+          {puedeEditarOrdenes && (
             <Button variant="outline" asChild>
               <Link href={verArchivadas ? "/taller" : "/taller?archivadas=1"}>
                 {verArchivadas ? "Ver activas" : "Ver eliminadas"}
               </Link>
             </Button>
           )}
-          {!verArchivadas && !soloLectura && (
+          {!verArchivadas && puedeEditarOrdenes && (
             <Button asChild>
               <Link href="/taller/ordenes/nueva">
                 <Plus className="h-4 w-4" />
@@ -104,7 +106,7 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
               </TableCell>
               <TableCell>
                 {verArchivadas ? (
-                  editable && <RestoreButton onConfirm={restoreOrdenTaller.bind(null, o.id)} />
+                  puedeEditarOrdenes && <RestoreButton onConfirm={restoreOrdenTaller.bind(null, o.id)} />
                 ) : (
                   <Button variant="outline" size="sm" asChild>
                     <a href={`/api/documentos/orden-taller/${o.id}`} target="_blank" rel="noopener noreferrer">
@@ -126,7 +128,7 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
         </TableBody>
       </Table>
 
-      {!soloLectura && (
+      {fullAccess && (
         <>
           <Card>
             <CardHeader>
@@ -152,7 +154,7 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
             </CardContent>
           </Card>
 
-          {editable && <GastoTallerForm action={createGastoTaller} />}
+          {puedeEditarCaja && <GastoTallerForm action={createGastoTaller} />}
 
           <Table>
             <TableHeader>

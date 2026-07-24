@@ -3,9 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { assertCan } from "@/lib/permissions/engine";
+import { assertCan, assertCanAny } from "@/lib/permissions/engine";
 import { unitsToCents } from "@/lib/money";
 import { logAudit } from "@/lib/audit";
+import { findOrCreateCliente, buscarClientesTaller, type CandidatoClienteTaller } from "@/lib/clienteTaller";
+
+const TALLER_EDIT_ORDENES = ["taller.edit", "taller.edit_ordenes"];
+
+export async function buscarClientesTallerAction(query: string): Promise<CandidatoClienteTaller[]> {
+  await assertCanAny(TALLER_EDIT_ORDENES);
+  return buscarClientesTaller(query);
+}
 
 const CHECKLIST_DEFAULT = ["Mecánica", "Electricidad", "Chapa", "Pintura", "Lavado", "Documentación", "Entrega"];
 
@@ -32,7 +40,7 @@ function intOrNull(value: FormDataEntryValue | null): number | null {
 }
 
 export async function createOrdenTaller(formData: FormData) {
-  const user = await assertCan("taller.edit");
+  const user = await assertCanAny(TALLER_EDIT_ORDENES);
 
   const origenVehiculo = String(formData.get("origenVehiculo") ?? "stock");
   const vehiculoId = origenVehiculo === "stock" ? String(formData.get("vehiculoId") ?? "").trim() : "";
@@ -49,11 +57,15 @@ export async function createOrdenTaller(formData: FormData) {
   const responsable = String(formData.get("responsable") ?? "").trim();
   const tecnicoResponsableId = String(formData.get("tecnicoResponsableId") ?? "").trim();
   const problema = String(formData.get("problema") ?? "").trim();
+  const clienteNombre = String(formData.get("clienteNombre") ?? "").trim();
+  const clienteTelefono = String(formData.get("clienteTelefono") ?? "").trim();
+  const costoServicio = parseFloat(String(formData.get("costoServicioCents") ?? "0")) || 0;
 
   if (!problema) throw new Error("Describí el problema o lo que tiene el vehículo");
   if (tiposServicio.length === 0) throw new Error("Elegí al menos un tipo de servicio");
 
   const imagenesIngreso = await filesToDataUrls(formData, "imagenesIngreso");
+  const clienteId = await findOrCreateCliente(clienteNombre, clienteTelefono || null);
 
   const orden = await db.ordenTaller.create({
     data: {
@@ -67,8 +79,10 @@ export async function createOrdenTaller(formData: FormData) {
       vehMatricula: String(formData.get("vehMatricula") ?? "").trim() || null,
       vehKm: intOrNull(formData.get("vehKm")),
       vehChasis: String(formData.get("vehChasis") ?? "").trim() || null,
-      clienteNombre: String(formData.get("clienteNombre") ?? "").trim() || null,
-      clienteTelefono: String(formData.get("clienteTelefono") ?? "").trim() || null,
+      vehCombustible: String(formData.get("vehCombustible") ?? "").trim() || null,
+      clienteId,
+      clienteNombre: clienteNombre || null,
+      clienteTelefono: clienteTelefono || null,
       clienteDireccion: String(formData.get("clienteDireccion") ?? "").trim() || null,
       prioridad,
       tiposServicio,
@@ -78,6 +92,7 @@ export async function createOrdenTaller(formData: FormData) {
       responsable: responsable || null,
       tecnicoResponsableId: tecnicoResponsableId || null,
       tecnicoResponsableFecha: tecnicoResponsableId ? new Date() : null,
+      costoServicioCents: unitsToCents(costoServicio),
       creadoPorId: user.id,
       checklist: { create: CHECKLIST_DEFAULT.map((tarea, i) => ({ tarea, orden: i })) },
       imagenes: { create: imagenesIngreso.map((dataUrl) => ({ dataUrl, categoria: "INGRESO" as const })) },
@@ -96,7 +111,7 @@ export async function createOrdenTaller(formData: FormData) {
 }
 
 export async function updateOrdenTaller(ordenId: string, formData: FormData) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
 
   const prioridad = String(formData.get("prioridad") ?? "MEDIA") as "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
   const tiposServicio = formData.getAll("tiposServicio").map(String);
@@ -118,11 +133,15 @@ export async function updateOrdenTaller(ordenId: string, formData: FormData) {
   const trabajosRealizados = String(formData.get("trabajosRealizados") ?? "").trim();
   const observaciones = String(formData.get("observaciones") ?? "").trim();
   const manoDeObra = parseFloat(String(formData.get("manoDeObraCents") ?? "0")) || 0;
+  const costoServicio = parseFloat(String(formData.get("costoServicioCents") ?? "0")) || 0;
+  const clienteNombre = String(formData.get("clienteNombre") ?? "").trim();
+  const clienteTelefono = String(formData.get("clienteTelefono") ?? "").trim();
 
   if (!problema) throw new Error("Describí el problema o lo que tiene el vehículo");
   if (tiposServicio.length === 0) throw new Error("Elegí al menos un tipo de servicio");
 
   const previa = await db.ordenTaller.findUnique({ where: { id: ordenId }, select: { tecnicoResponsableId: true } });
+  const clienteId = await findOrCreateCliente(clienteNombre, clienteTelefono || null);
 
   await db.ordenTaller.update({
     where: { id: ordenId },
@@ -141,6 +160,7 @@ export async function updateOrdenTaller(ordenId: string, formData: FormData) {
       trabajosRealizados: trabajosRealizados || null,
       observaciones: observaciones || null,
       manoDeObraCents: unitsToCents(manoDeObra),
+      costoServicioCents: unitsToCents(costoServicio),
       vehMarca: String(formData.get("vehMarca") ?? "").trim() || null,
       vehModelo: String(formData.get("vehModelo") ?? "").trim() || null,
       vehVersion: String(formData.get("vehVersion") ?? "").trim() || null,
@@ -149,8 +169,10 @@ export async function updateOrdenTaller(ordenId: string, formData: FormData) {
       vehMatricula: String(formData.get("vehMatricula") ?? "").trim() || null,
       vehKm: intOrNull(formData.get("vehKm")),
       vehChasis: String(formData.get("vehChasis") ?? "").trim() || null,
-      clienteNombre: String(formData.get("clienteNombre") ?? "").trim() || null,
-      clienteTelefono: String(formData.get("clienteTelefono") ?? "").trim() || null,
+      vehCombustible: String(formData.get("vehCombustible") ?? "").trim() || null,
+      clienteId,
+      clienteNombre: clienteNombre || null,
+      clienteTelefono: clienteTelefono || null,
       clienteDireccion: String(formData.get("clienteDireccion") ?? "").trim() || null,
     },
   });
@@ -187,7 +209,7 @@ export async function setControlCalidad(ordenId: string, formData: FormData) {
 }
 
 export async function saveFirmaCliente(ordenId: string, formData: FormData) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
 
   const firma = String(formData.get("firma") ?? "");
   if (!firma) throw new Error("Falta la firma");
@@ -208,7 +230,7 @@ export async function saveFirmaCliente(ordenId: string, formData: FormData) {
 }
 
 export async function addRepuesto(ordenId: string, formData: FormData) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
 
   const codigo = String(formData.get("codigo") ?? "").trim();
   const descripcion = String(formData.get("descripcion") ?? "").trim();
@@ -226,13 +248,13 @@ export async function addRepuesto(ordenId: string, formData: FormData) {
 }
 
 export async function deleteRepuesto(ordenId: string, repuestoId: string) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTallerRepuesto.delete({ where: { id: repuestoId } });
   revalidatePath(`/taller/ordenes/${ordenId}`);
 }
 
 export async function addGastoOrden(ordenId: string, formData: FormData) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
 
   const descripcion = String(formData.get("descripcion") ?? "").trim();
   const moneda = String(formData.get("moneda") ?? "UYU") as "UYU" | "USD";
@@ -248,19 +270,19 @@ export async function addGastoOrden(ordenId: string, formData: FormData) {
 }
 
 export async function deleteGastoOrden(ordenId: string, gastoId: string) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTallerGasto.delete({ where: { id: gastoId } });
   revalidatePath(`/taller/ordenes/${ordenId}`);
 }
 
 export async function toggleChecklistItem(ordenId: string, itemId: string, hecho: boolean) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTallerChecklistItem.update({ where: { id: itemId }, data: { hecho } });
   revalidatePath(`/taller/ordenes/${ordenId}`);
 }
 
 export async function addChecklistItem(ordenId: string, formData: FormData) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   const tarea = String(formData.get("tarea") ?? "").trim();
   if (!tarea) throw new Error("Describí la tarea");
   const count = await db.ordenTallerChecklistItem.count({ where: { ordenTallerId: ordenId } });
@@ -269,13 +291,13 @@ export async function addChecklistItem(ordenId: string, formData: FormData) {
 }
 
 export async function deleteChecklistItem(ordenId: string, itemId: string) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTallerChecklistItem.delete({ where: { id: itemId } });
   revalidatePath(`/taller/ordenes/${ordenId}`);
 }
 
 export async function addImagenes(ordenId: string, formData: FormData) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   const categoria = String(formData.get("categoria") ?? "OTRA") as "INGRESO" | "REPARACION" | "FINALIZADO" | "OTRA";
   const imagenes = await filesToDataUrls(formData, "imagenes");
   if (imagenes.length === 0) throw new Error("Elegí al menos una imagen");
@@ -286,7 +308,7 @@ export async function addImagenes(ordenId: string, formData: FormData) {
 }
 
 export async function deleteImagen(ordenId: string, imagenId: string) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTallerImagen.delete({ where: { id: imagenId } });
   revalidatePath(`/taller/ordenes/${ordenId}`);
 }
@@ -328,7 +350,7 @@ export async function createGastoTaller(formData: FormData) {
 }
 
 export async function archiveOrdenTaller(id: string) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTaller.update({ where: { id }, data: { archivedAt: new Date() } });
   await logAudit({ accion: "ELIMINAR", entidad: "Orden de taller", entidadId: id, descripcion: "Archivó la orden de taller" });
   revalidatePath("/taller");
@@ -336,7 +358,7 @@ export async function archiveOrdenTaller(id: string) {
 }
 
 export async function restoreOrdenTaller(id: string) {
-  await assertCan("taller.edit");
+  await assertCanAny(TALLER_EDIT_ORDENES);
   await db.ordenTaller.update({ where: { id }, data: { archivedAt: null } });
   await logAudit({ accion: "EDITAR", entidad: "Orden de taller", entidadId: id, descripcion: "Restauró la orden de taller" });
   revalidatePath("/taller");
