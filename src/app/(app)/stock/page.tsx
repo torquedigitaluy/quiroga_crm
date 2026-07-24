@@ -226,8 +226,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
             </p>
           )}
 
-          <Table>
-            <TableHeader>
+          <Table containerClassName="max-h-[70vh] overflow-y-auto overscroll-contain">
+            <TableHeader className="sticky top-0 z-10 shadow-sm">
               <TableRow>
                 {puedeOrdenar && <TableHead className="w-8" />}
                 <TableHead>{sortLink(sp, sortInfo, "marca", "Marca / Modelo")}</TableHead>
@@ -273,8 +273,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
               </Button>
             </Can>
           </div>
-          <Table>
-            <TableHeader>
+          <Table containerClassName="max-h-[70vh] overflow-y-auto overscroll-contain">
+            <TableHeader className="sticky top-0 z-10 shadow-sm">
               <TableRow>
                 <TableHead>Categoría</TableHead>
                 <TableHead>Nombre</TableHead>
@@ -326,8 +326,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
             <p className="text-sm text-muted-foreground">
               Vehículos y accesorios eliminados. Se pueden restaurar en cualquier momento.
             </p>
-            <Table>
-              <TableHeader>
+            <Table containerClassName="max-h-[70vh] overflow-y-auto overscroll-contain">
+              <TableHeader className="sticky top-0 z-10 shadow-sm">
                 <TableRow>
                   <TableHead>Marca / Modelo</TableHead>
                   <TableHead>Matrícula</TableHead>
