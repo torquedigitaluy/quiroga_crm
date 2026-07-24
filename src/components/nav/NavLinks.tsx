@@ -18,7 +18,6 @@ import {
   UserCog,
   Search,
   Wrench,
-  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,7 +39,6 @@ const ICONS: Record<IconKey, LucideIcon> = {
   clientes: Search,
   admin: UserCog,
   taller: Wrench,
-  presupuestos: ClipboardList,
 };
 
 export function NavLinks({ items }: { items: NavItem[] }) {

@@ -19,7 +19,7 @@ export default function RootLayout({
       {/* suppressHydrationWarning: algunas extensiones del navegador (p.ej.
           ColorZilla) inyectan atributos en el body antes de que cargue React y
           eso dispara un falso error de hidratación. */}
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col overscroll-none" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           {children}
           <Toaster position="top-right" richColors />

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { GastoTallerForm } from "@/components/taller/GastoTallerForm";
 import { OrdenEstadoBadge } from "@/components/taller/OrdenEstadoBadge";
+import { TallerTabs } from "@/components/taller/TallerTabs";
 import { RestoreButton } from "@/components/ui/RestoreButton";
 import { createGastoTaller, restoreOrdenTaller } from "./actions";
 
@@ -50,6 +51,8 @@ export default async function TallerPage({ searchParams }: { searchParams: Promi
         <h1 className="text-2xl font-semibold text-foreground">Taller</h1>
         <p className="text-sm text-muted-foreground">Gastos de taller y órdenes de trabajo.</p>
       </div>
+
+      <TallerTabs active="ordenes" />
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">

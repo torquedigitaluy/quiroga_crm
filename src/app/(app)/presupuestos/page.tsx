@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ConfirmArchiveButton } from "@/components/ui/ConfirmArchiveButton";
 import { RestoreButton } from "@/components/ui/RestoreButton";
+import { TallerTabs } from "@/components/taller/TallerTabs";
 import { archivePresupuesto, restorePresupuesto } from "./actions";
 
 export default async function PresupuestosPage({
@@ -76,6 +77,8 @@ export default async function PresupuestosPage({
           )}
         </div>
       </div>
+
+      <TallerTabs active="presupuestos" />
 
       <form className="flex flex-wrap items-end gap-2">
         {archivadas && <input type="hidden" name="archivadas" value={archivadas} />}

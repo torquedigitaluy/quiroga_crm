@@ -182,7 +182,7 @@ export default async function CostosIndexPage({ searchParams }: { searchParams: 
         )}
       </form>
 
-      <Table containerClassName="max-h-[70vh] overflow-y-auto">
+      <Table containerClassName="max-h-[70vh] overflow-y-auto overscroll-contain">
         <TableHeader className="sticky top-0 z-10 shadow-sm">
           <TableRow>
             <TableHead>Vehículo</TableHead>

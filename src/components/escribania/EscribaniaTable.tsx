@@ -70,7 +70,11 @@ export function EscribaniaTable({
 
   return (
     <div className="flex flex-col gap-2">
-      <Table containerRef={containerRef} containerClassName="max-h-[70vh] overflow-y-auto" className="table-fixed">
+      <Table
+        containerRef={containerRef}
+        containerClassName="max-h-[70vh] overflow-y-auto overscroll-contain"
+        className="table-fixed"
+      >
         <colgroup>
           {columns.map((c) => (
             <col key={c.key} style={{ width: widths[c.key] ?? c.defaultWidth }} />

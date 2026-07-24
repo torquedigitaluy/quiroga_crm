@@ -11,7 +11,6 @@ import { useEffect, useRef, useState } from "react";
 export function FloatingScrollbar({ targetRef }: { targetRef: React.RefObject<HTMLDivElement | null> }) {
   const barRef = useRef<HTMLDivElement>(null);
   const [contentWidth, setContentWidth] = useState(0);
-  const syncing = useRef(false);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -23,26 +22,19 @@ export function FloatingScrollbar({ targetRef }: { targetRef: React.RefObject<HT
     return () => ro.disconnect();
   }, [targetRef]);
 
+  // Sincroniza ambas barras comparando el valor actual (en vez de un flag de
+  // "quién disparó el evento"), así ningún evento de scroll se pierde durante
+  // un arrastre continuo del mouse.
   useEffect(() => {
     const target = targetRef.current;
     const bar = barRef.current;
     if (!target || !bar) return;
 
     const onTargetScroll = () => {
-      if (syncing.current) {
-        syncing.current = false;
-        return;
-      }
-      syncing.current = true;
-      bar.scrollLeft = target.scrollLeft;
+      if (bar.scrollLeft !== target.scrollLeft) bar.scrollLeft = target.scrollLeft;
     };
     const onBarScroll = () => {
-      if (syncing.current) {
-        syncing.current = false;
-        return;
-      }
-      syncing.current = true;
-      target.scrollLeft = bar.scrollLeft;
+      if (target.scrollLeft !== bar.scrollLeft) target.scrollLeft = bar.scrollLeft;
     };
 
     target.addEventListener("scroll", onTargetScroll);

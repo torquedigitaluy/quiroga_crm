@@ -13,8 +13,7 @@ export type IconKey =
   | "documentos"
   | "clientes"
   | "admin"
-  | "taller"
-  | "presupuestos";
+  | "taller";
 
 export type NavItem = {
   href: string;
@@ -37,8 +36,12 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/contadora", label: "Contadora", icon: "contadora", permission: "contadora.view" },
   { href: "/personal", label: "Personal", icon: "personal", permission: "personal.view" },
   { href: "/documentos", label: "Documentos", icon: "documentos", permission: "docs.generate" },
-  { href: "/taller", label: "Taller", icon: "taller", permission: ["taller.view", "taller.view_ordenes", "taller.edit_ordenes"] },
-  { href: "/presupuestos", label: "Presupuestos", icon: "presupuestos", permission: ["presupuestos.view", "presupuestos.edit"] },
+  {
+    href: "/taller",
+    label: "Taller",
+    icon: "taller",
+    permission: ["taller.view", "taller.view_ordenes", "taller.edit_ordenes", "presupuestos.view", "presupuestos.edit"],
+  },
   { href: "/clientes", label: "Clientes", icon: "clientes", permission: "clientes.view" },
   { href: "/admin/usuarios", label: "Administración", icon: "admin", permission: "admin.users" },
   { href: "/admin/auditoria", label: "Historial de cambios", icon: "admin", permission: "audit.view" },

@@ -95,16 +95,12 @@ export function PresupuestoPDF({ data }: { data: PresupuestoPdfData }) {
             <Text style={pdfStyles.section}>Aceites</Text>
             <View style={styles.tableHeader}>
               <Text style={[styles.th, { flex: 1 }]}>Producto</Text>
-              <Text style={[styles.th, { width: 40 }]}>Cant.</Text>
-              <Text style={[styles.th, { width: 70 }]}>Precio unit.</Text>
-              <Text style={[styles.th, { width: 70 }]}>Total</Text>
+              <Text style={[styles.th, { width: 60 }]}>Cant.</Text>
             </View>
             {data.aceites.map((a, i) => (
               <View key={i} style={styles.tableRow}>
                 <Text style={[styles.td, { flex: 1 }]}>{a.nombre}</Text>
-                <Text style={[styles.td, { width: 40 }]}>{a.cantidad}</Text>
-                <Text style={[styles.td, { width: 70 }]}>{money(a.precioCents, a.moneda)}</Text>
-                <Text style={[styles.td, { width: 70 }]}>{money(a.precioCents * a.cantidad, a.moneda)}</Text>
+                <Text style={[styles.td, { width: 60 }]}>{a.cantidad}</Text>
               </View>
             ))}
           </>
@@ -115,16 +111,12 @@ export function PresupuestoPDF({ data }: { data: PresupuestoPdfData }) {
             <Text style={pdfStyles.section}>Artículos y repuestos</Text>
             <View style={styles.tableHeader}>
               <Text style={[styles.th, { flex: 1 }]}>Artículo</Text>
-              <Text style={[styles.th, { width: 40 }]}>Cant.</Text>
-              <Text style={[styles.th, { width: 70 }]}>Precio unit.</Text>
-              <Text style={[styles.th, { width: 70 }]}>Total</Text>
+              <Text style={[styles.th, { width: 60 }]}>Cant.</Text>
             </View>
             {data.articulos.map((a, i) => (
               <View key={i} style={styles.tableRow}>
                 <Text style={[styles.td, { flex: 1 }]}>{a.nombre}</Text>
-                <Text style={[styles.td, { width: 40 }]}>{a.cantidad}</Text>
-                <Text style={[styles.td, { width: 70 }]}>{money(a.precioCents, a.moneda)}</Text>
-                <Text style={[styles.td, { width: 70 }]}>{money(a.precioCents * a.cantidad, a.moneda)}</Text>
+                <Text style={[styles.td, { width: 60 }]}>{a.cantidad}</Text>
               </View>
             ))}
           </>
